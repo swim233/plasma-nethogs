@@ -18,6 +18,9 @@ Item {
     required property string exe
     required property real rx
     required property real tx
+    /// Still inside its grace period after going quiet. Dimmed rather than
+    /// dropped, so a bursty application holds its place in the ranking.
+    required property bool idle
     required property int pidCount
     /// See rowFor() in main.qml for why these two arrive as JSON text.
     required property string pidsJson
@@ -35,6 +38,9 @@ Item {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        // Left only: a right click has to reach the applet so Plasma can show
+        // its own Configure/Remove menu.
+        acceptedButtons: Qt.LeftButton
         cursorShape: row.pidCount > 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
             if (row.pidCount > 1) {
@@ -61,6 +67,16 @@ Item {
         anchors.fill: parent
         anchors.margins: Kirigami.Units.smallSpacing
         spacing: Kirigami.Units.smallSpacing
+
+        // Dimming lives here rather than on the delegate root, whose opacity
+        // the ListView's add and remove transitions animate.
+        opacity: row.idle ? 0.45 : 1
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.InOutQuad
+            }
+        }
 
         RowLayout {
             Layout.fillWidth: true

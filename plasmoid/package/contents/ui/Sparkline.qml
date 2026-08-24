@@ -27,7 +27,19 @@ Item {
         return max;
     }
 
-    readonly property bool drawable: count >= 2 && peak > 0
+    /// The trace is scaled to the tallest sample in its window, so the whole
+    /// curve jumps whenever that sample enters or leaves. Easing the scale
+    /// turns those jumps into a stretch.
+    property real smoothPeak: peak
+
+    Behavior on smoothPeak {
+        NumberAnimation {
+            duration: Kirigami.Units.longDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    readonly property bool drawable: count >= 2 && smoothPeak > 0
 
     readonly property var linePoints: {
         if (!drawable) {
@@ -36,7 +48,8 @@ Item {
         const points = [];
         const step = width / (count - 1);
         for (let i = 0; i < count; ++i) {
-            points.push(Qt.point(i * step, height - (values[i] / peak) * height));
+            const scaled = Math.min(1, values[i] / smoothPeak);
+            points.push(Qt.point(i * step, height - scaled * height));
         }
         return points;
     }

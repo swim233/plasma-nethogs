@@ -128,7 +128,26 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now pnmd
 ```
 
-Add *Network Top* to a panel or the desktop.
+Add *Network Top* to a panel or the desktop. Right-click it for the usual
+Configure / Remove menu.
+
+### Settings
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| Title | *Network Top* | Heading shown above the list; can be hidden |
+| Applications to list | 5 | How many rows the list holds |
+| Refresh interval | 1000 ms | Should match the daemon's own interval |
+| Keep idle applications for | 10 s | Grace period before a quiet application fades out |
+| Exclude processes | empty | Names to leave out, and to subtract from the totals |
+| Panel entry shows | busiest application | What the compact panel entry displays |
+| Snapshot file | `/run/pnmd/state.json` | Where to read the daemon's output |
+
+An application that stops transferring keeps its place in the list, dimmed and
+reading zero, until its grace period expires. Ranking by a rate that moves
+every second means bursty applications would otherwise flicker in and out once
+a second. Active applications always claim the available rows first, so a
+lingering one can never displace a transferring one.
 
 The kernel must have `CONFIG_DEBUG_INFO_BTF=y`; `pnmd` says so explicitly if
 `/sys/kernel/btf/vmlinux` is missing. `vmlinux.h` is generated at build time

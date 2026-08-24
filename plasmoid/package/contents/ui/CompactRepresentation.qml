@@ -91,6 +91,9 @@ Item {
 
     MouseArea {
         anchors.fill: parent
+        // Left only: a right click has to reach the applet so Plasma can show
+        // its own Configure/Remove menu.
+        acceptedButtons: Qt.LeftButton
         onClicked: main.expanded = !main.expanded
     }
 }

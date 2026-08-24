@@ -13,6 +13,12 @@ PlasmoidItem {
 
     readonly property bool binaryUnits: Plasmoid.configuration.binaryUnits
 
+    /// A kcfg default cannot be translated, so an empty setting means "use the
+    /// translated default".
+    readonly property string title: Plasmoid.configuration.widgetTitle.length > 0
+        ? Plasmoid.configuration.widgetTitle
+        : i18n("Network Top")
+
     /// "ok" | "unavailable" | "stale". Not named `status` to stay clear of
     /// Plasmoid.status.
     readonly property string daemonStatus: source.status
@@ -21,10 +27,12 @@ PlasmoidItem {
     property real totalTx: 0
 
     /// The representations live in their own QML files and cannot see ids from
-    /// this one, so they reach the model through Plasmoid.rootItem.
+    /// this one, so they reach the model through an explicitly passed reference.
     readonly property alias apps: appsModel
 
-    /// Top application after exclusions, or null when nothing is transferring.
+    /// Busiest *active* application, or null when nothing is transferring. A
+    /// lingering row is never reported here — the panel should not claim an
+    /// idle application is the top talker.
     /// Assigned rather than bound: the model's contents change far more often
     /// than its count, which a binding on get(0) would miss.
     property var topApp: null
@@ -40,7 +48,13 @@ PlasmoidItem {
     // model row instead.
     property var history: ({})
 
+    // Keyed by app key: the last row seen for an application and when it was
+    // last active. Lets a bursty application hold its place instead of
+    // flickering out of the list between transfers.
+    property var lingering: ({})
+
     Plasmoid.backgroundHints: PlasmaCore.Types.DefaultBackground | PlasmaCore.Types.ConfigurableBackground
+    Plasmoid.title: root.title
 
     preferredRepresentation: Plasmoid.formFactor === PlasmaCore.Types.Planar
         ? fullRepresentation
@@ -56,7 +70,7 @@ PlasmoidItem {
         main: root
     }
 
-    toolTipMainText: i18n("Network Top")
+    toolTipMainText: root.title
     toolTipSubText: {
         if (daemonStatus === "unavailable") {
             return i18n("The pnmd service is not running.");
@@ -92,9 +106,24 @@ PlasmoidItem {
         if (daemonStatus !== "ok") {
             appsModel.clear();
             history = {};
+            lingering = {};
             topApp = null;
             totalRx = 0;
             totalTx = 0;
+        }
+    }
+
+    // Lingering rows would otherwise outlive a change to the setting that
+    // created them.
+    Connections {
+        target: Plasmoid.configuration
+
+        function onLingerSecondsChanged() {
+            root.lingering = {};
+        }
+
+        function onExcludeProcessesChanged() {
+            root.lingering = {};
         }
     }
 
@@ -108,7 +137,7 @@ PlasmoidItem {
     }
 
     function ingest(snapshot) {
-        const kept = [];
+        const active = [];
         let rx = snapshot.total.rx;
         let tx = snapshot.total.tx;
 
@@ -120,16 +149,21 @@ PlasmoidItem {
                 rx -= app.rx;
                 tx -= app.tx;
             } else {
-                kept.push(app);
+                active.push(app);
             }
         }
 
         totalRx = Math.max(0, rx);
         totalTx = Math.max(0, tx);
 
-        const seen = {};
-        for (const app of kept) {
-            seen[app.key] = true;
+        const now = Date.now();
+        const lingerMs = Math.max(0, Plasmoid.configuration.lingerSeconds) * 1000;
+
+        const isActive = {};
+        for (const app of active) {
+            isActive[app.key] = true;
+            lingering[app.key] = { row: app, lastActive: now };
+
             const samples = history[app.key] || [];
             samples.push(app.rx + app.tx);
             while (samples.length > historyLength) {
@@ -142,7 +176,7 @@ PlasmoidItem {
         // its sparkline still has context if it wakes up again. Once the whole
         // window is idle there is nothing left to draw.
         for (const key in history) {
-            if (seen[key]) {
+            if (isActive[key]) {
                 continue;
             }
             const samples = history[key];
@@ -155,9 +189,29 @@ PlasmoidItem {
             }
         }
 
-        const visible = kept.slice(0, Plasmoid.configuration.topCount);
-        syncModel(visible);
-        topApp = visible.length > 0 ? rowFor(visible[0]) : null;
+        // Applications that stopped transferring but are still inside their
+        // grace period, most recently active first.
+        const idle = [];
+        for (const key in lingering) {
+            if (isActive[key]) {
+                continue;
+            }
+            if (now - lingering[key].lastActive > lingerMs) {
+                delete lingering[key];
+                continue;
+            }
+            idle.push(lingering[key]);
+        }
+        idle.sort((a, b) => b.lastActive - a.lastActive);
+
+        // Active applications claim the available slots first, so a lingering
+        // row can never push a transferring one out of the list.
+        const rows = active.map(app => rowFor(app, false))
+            .concat(idle.map(entry => rowFor(entry.row, true)))
+            .slice(0, Plasmoid.configuration.topCount);
+
+        syncModel(rows);
+        topApp = active.length > 0 ? rowFor(active[0], false) : null;
     }
 
     /// One model row.
@@ -167,48 +221,66 @@ PlasmoidItem {
     /// back as an array — and switching the model to dynamicRoles does not
     /// help. Encoding forty numbers and a handful of pid records once a second
     /// costs nothing and keeps the roles statically typed.
-    function rowFor(app) {
+    function rowFor(app, idle) {
         return {
             key: app.key,
             name: app.name,
             icon: app.icon || "",
             exe: app.exe || "",
             desktopId: app.desktopId || "",
-            rx: app.rx,
-            tx: app.tx,
+            // A lingering row reports zero rather than its last reading, which
+            // would look like the transfer is still going.
+            rx: idle ? 0 : app.rx,
+            tx: idle ? 0 : app.tx,
+            idle: idle,
             pidCount: (app.pids || []).length,
             pidsJson: JSON.stringify(app.pids || []),
             sparkJson: JSON.stringify(history[app.key] || [])
         };
     }
 
-    /// Reconciles the model in place instead of clearing it, so rows that only
-    /// change rank slide rather than blink, and an expanded row stays expanded.
-    function syncModel(apps) {
-        for (let i = 0; i < apps.length; ++i) {
-            const app = apps[i];
+    /// Reconciles the model in place instead of clearing it. Every kind of
+    /// change then maps onto the ListView transition that fits it: a new
+    /// application animates in, a rank change slides, and an expired row
+    /// fades out — rather than the whole list blinking once a second.
+    function syncModel(rows) {
+        const wanted = {};
+        for (const row of rows) {
+            wanted[row.key] = true;
+        }
+
+        // Departing rows go first, so each one fades out where it stands.
+        // Trimming the tail instead would shuffle an expiring row down the
+        // list before removing it, and it would read as a demotion rather
+        // than as an exit.
+        for (let i = appsModel.count - 1; i >= 0; --i) {
+            if (!wanted[appsModel.get(i).key]) {
+                appsModel.remove(i, 1);
+            }
+        }
+
+        // Every surviving row is now somewhere in `rows`, and `rows` has no
+        // duplicate keys, so this pass alone brings the model into shape.
+        for (let i = 0; i < rows.length; ++i) {
+            const row = rows[i];
 
             let found = -1;
             for (let j = i; j < appsModel.count; ++j) {
-                if (appsModel.get(j).key === app.key) {
+                if (appsModel.get(j).key === row.key) {
                     found = j;
                     break;
                 }
             }
 
             if (found === -1) {
-                appsModel.insert(i, rowFor(app));
+                appsModel.insert(i, row);
                 continue;
             }
 
             if (found !== i) {
                 appsModel.move(found, i, 1);
             }
-            appsModel.set(i, rowFor(app));
-        }
-
-        if (appsModel.count > apps.length) {
-            appsModel.remove(apps.length, appsModel.count - apps.length);
+            appsModel.set(i, row);
         }
     }
 }

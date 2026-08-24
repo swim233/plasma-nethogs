@@ -6,11 +6,28 @@
   <kcfgfile name=""/>
 
   <group name="General">
+    <!-- Empty means "use the translated default", which a kcfg default cannot
+         express. -->
+    <entry name="widgetTitle" type="String">
+      <default></default>
+    </entry>
+
+    <entry name="showTitle" type="Bool">
+      <default>true</default>
+    </entry>
+
     <!-- Should match the interval pnmd was started with. Note that XML
          forbids a double hyphen inside a comment, so pnmd's option cannot be
          spelled out here; see README.md. -->
     <entry name="refreshInterval" type="Int">
       <default>1000</default>
+    </entry>
+
+    <!-- How long an application keeps its place in the list after it stops
+         transferring. Without this, anything bursty flickers in and out once
+         a second. -->
+    <entry name="lingerSeconds" type="Int">
+      <default>10</default>
     </entry>
 
     <entry name="topCount" type="Int">
