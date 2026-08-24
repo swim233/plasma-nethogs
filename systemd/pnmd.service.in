@@ -1,0 +1,37 @@
+[Unit]
+Description=Per-process network monitor daemon
+Documentation=https://github.com/cloudnyko/proc_net_monitor
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=@KDE_INSTALL_FULL_BINDIR@/pnmd --interval 1000
+Restart=on-failure
+RestartSec=5
+
+# systemd creates and tears down /run/pnmd for us.
+RuntimeDirectory=pnmd
+RuntimeDirectoryMode=0755
+
+# CAP_BPF + CAP_PERFMON load and attach the programs.
+# CAP_SYS_PTRACE is what allows readlink() on another user's /proc/<pid>/exe.
+AmbientCapabilities=CAP_BPF CAP_PERFMON CAP_SYS_PTRACE
+CapabilityBoundingSet=CAP_BPF CAP_PERFMON CAP_SYS_PTRACE
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service bpf perf_event_open
+MemoryMax=64M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd" >
+  <kcfgfile name=""/>
+
+  <group name="General">
+    <!-- Should match the interval pnmd was started with. Note that XML
+         forbids a double hyphen inside a comment, so pnmd's option cannot be
+         spelled out here; see README.md. -->
+    <entry name="refreshInterval" type="Int">
+      <default>1000</default>
+    </entry>
+
+    <entry name="topCount" type="Int">
+      <default>5</default>
+    </entry>
+
+    <!-- topProcess | totals | both -->
+    <entry name="compactDisplay" type="String">
+      <default>topProcess</default>
+    </entry>
+
+    <entry name="showTotals" type="Bool">
+      <default>true</default>
+    </entry>
+
+    <entry name="showSparklines" type="Bool">
+      <default>true</default>
+    </entry>
+
+    <entry name="binaryUnits" type="Bool">
+      <default>true</default>
+    </entry>
+
+    <entry name="statePath" type="String">
+      <default>/run/pnmd/state.json</default>
+    </entry>
+
+    <!-- Applied in the widget rather than in the daemon so that changing it
+         does not need a service restart. Matched against the process name and
+         the executable's basename, case insensitively. -->
+    <entry name="excludeProcesses" type="StringList">
+      <default></default>
+    </entry>
+  </group>
+</kcfg>

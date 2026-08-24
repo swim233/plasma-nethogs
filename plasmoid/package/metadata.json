@@ -1,0 +1,22 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "cloudnyko@gmail.com",
+                "Name": "swim"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Shows which applications are using the network right now",
+        "Description[zh_CN]": "显示当前占用网络带宽最多的应用",
+        "Icon": "network-transmit-receive",
+        "Id": "io.github.cloudnyko.procnetmonitor",
+        "License": "GPL-2.0-or-later",
+        "Name": "Network Top",
+        "Name[zh_CN]": "网络占用",
+        "Version": "1.0",
+        "Website": "https://github.com/cloudnyko/proc_net_monitor"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
