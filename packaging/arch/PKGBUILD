@@ -1,0 +1,73 @@
+# Maintainer: swim <swim853279614@163.com>
+#
+# Builds the checkout this file lives in, rather than fetching a source — the
+# counterpart to ../aur/PKGBUILD, which builds what is pushed. Use this one to
+# get an installable package out of local work:
+#
+#     cd packaging/arch && makepkg -si
+#
+# Keep the two in step; only the source and the pkgname differ.
+
+pkgname=plasma-nethogs
+# makepkg rewrites this from pkgver() on every build; the checked-in value is
+# only a starting point.
+pkgver=r9.g185f48e
+pkgrel=1
+pkgdesc="Plasma 6 widget showing which applications are using the network, fed by an eBPF collector"
+arch=('x86_64' 'aarch64')
+url="https://github.com/swim233/plasma-nethogs"
+license=('GPL-2.0-or-later')
+depends=(
+  'glibc'
+  'kcmutils'
+  'kirigami'
+  'ksvg'
+  'libbpf'
+  'libplasma'
+  'libstdc++'
+  # plasmashell, which hosts the applet. No file in the package points at it,
+  # so namcap reports it as possibly unneeded; it is not.
+  'plasma-workspace'
+  'plasma5support'
+  'qt6-base'
+  'qt6-declarative'
+)
+makedepends=(
+  'bpf'
+  'clang'
+  'cmake'
+  'extra-cmake-modules'
+  'git'
+  'kpackage'
+  'ninja'
+)
+install="${pkgname}.install"
+source=()
+
+_repo() { printf '%s' "${startdir}/../.."; }
+
+pkgver() {
+  cd "$(_repo)"
+  local ver="r$(git rev-list --count HEAD).g$(git rev-parse --short HEAD)"
+  # The commit only names the starting point: what gets packaged is whatever is
+  # in the tree right now, so say when that is not the commit.
+  [ -z "$(git status --porcelain)" ] || ver+=".dirty"
+  printf '%s' "$ver"
+}
+
+build() {
+  # vmlinux.h is generated from /sys/kernel/btf/vmlinux, so the build machine's
+  # kernel needs CONFIG_DEBUG_INFO_BTF=y. CO-RE resolves the relocations
+  # against whatever kernel is running at load time, so the result is not tied
+  # to this one.
+  cmake -S "$(_repo)" -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_TESTING=OFF
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$(_repo)/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

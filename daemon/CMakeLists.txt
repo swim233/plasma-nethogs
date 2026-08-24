@@ -46,6 +46,11 @@ add_custom_command(
             # bpftool's generated vmlinux.h is full of anonymous forward
             # declarations that this warning fires on.
             -Wno-missing-declarations
+            # -g feeds .BTF.ext line info, which records the source path as
+            # given — and the skeleton embeds the whole object into
+            # plasma-nethogsd, so without this the build directory ends up
+            # inside the binary. makepkg reports it as a reference to $srcdir.
+            -fdebug-prefix-map=${CMAKE_SOURCE_DIR}=.
             -D${BPF_TARGET_ARCH}
             -I${BPF_GEN_DIR}
             -I${CMAKE_CURRENT_SOURCE_DIR}/bpf

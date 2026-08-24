@@ -1,1 +1,6 @@
 build/
+dist/
+# makepkg's own working directories, when it is run in place
+packaging/*/pkg/
+packaging/*/src/
+packaging/*/*.pkg.tar.zst
