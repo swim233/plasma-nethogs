@@ -1,8 +1,12 @@
 # plasma-nethogs
+[简体中文](README.zh-CN.md)
+
+<img width="513" height="321" alt="image" src="https://github.com/user-attachments/assets/8f9ff162-40d5-4bad-91e7-68f9561713d6" />
+
 
 A KDE Plasma 6 widget that shows which applications are using the network right
 now, backed by an eBPF collector.
-[简体中文](README.zh-CN.md)
+
 
 Linux has no kernel interface for per-process network byte counts:
 `/proc/<pid>/net/*` is per network namespace, not per process, and
