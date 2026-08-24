@@ -139,6 +139,8 @@ Configure / Remove menu.
 | Applications to list | 5 | How many rows the list holds |
 | Refresh interval | 1000 ms | Should match the daemon's own interval |
 | Keep idle applications for | 10 s | Grace period before a quiet application fades out |
+| Animations | on | Whether list changes are animated at all |
+| Speed | 1× | Scales the durations on top of the system-wide animation speed |
 | Exclude processes | empty | Names to leave out, and to subtract from the totals |
 | Panel entry shows | busiest application | What the compact panel entry displays |
 | Snapshot file | `/run/pnmd/state.json` | Where to read the daemon's output |

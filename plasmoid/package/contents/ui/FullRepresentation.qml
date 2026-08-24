@@ -7,6 +7,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
+import "Animation.js" as Animation
 import "Rates.js" as Rates
 
 /**
@@ -30,6 +31,10 @@ Item {
     required property PlasmoidItem main
 
     readonly property bool online: main.daemonStatus === "ok"
+
+    readonly property bool animate: Plasmoid.configuration.animationsEnabled
+    readonly property int animationDuration:
+        Animation.scaled(Kirigami.Units.longDuration, Plasmoid.configuration.animationSpeed)
     readonly property bool headerVisible:
         (Plasmoid.configuration.showTitle || Plasmoid.configuration.showTotals) && online
 
@@ -162,19 +167,21 @@ Item {
 
                 // A newly seen application grows in from the left.
                 add: Transition {
+                    enabled: full.animate
+
                     ParallelAnimation {
                         NumberAnimation {
                             property: "opacity"
                             from: 0
                             to: 1
-                            duration: Kirigami.Units.longDuration
+                            duration: full.animationDuration
                             easing.type: Easing.OutCubic
                         }
                         NumberAnimation {
                             property: "x"
                             from: -Kirigami.Units.gridUnit * 2
                             to: 0
-                            duration: Kirigami.Units.longDuration
+                            duration: full.animationDuration
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -183,17 +190,19 @@ Item {
                 // An application whose grace period ran out fades away rather
                 // than vanishing between two frames.
                 remove: Transition {
+                    enabled: full.animate
+
                     ParallelAnimation {
                         NumberAnimation {
                             property: "opacity"
                             to: 0
-                            duration: Kirigami.Units.longDuration
+                            duration: full.animationDuration
                             easing.type: Easing.InCubic
                         }
                         NumberAnimation {
                             property: "x"
                             to: Kirigami.Units.gridUnit * 2
-                            duration: Kirigami.Units.longDuration
+                            duration: full.animationDuration
                             easing.type: Easing.InCubic
                         }
                     }
@@ -202,18 +211,22 @@ Item {
                 // The row that actually changed rank, e.g. third place
                 // overtaking first.
                 move: Transition {
+                    enabled: full.animate
+
                     NumberAnimation {
                         properties: "y"
-                        duration: Kirigami.Units.longDuration
+                        duration: full.animationDuration
                         easing.type: Easing.InOutCubic
                     }
                 }
 
                 // Everything shoved aside by an add, a remove or a move.
                 displaced: Transition {
+                    enabled: full.animate
+
                     NumberAnimation {
                         properties: "x,y"
-                        duration: Kirigami.Units.longDuration
+                        duration: full.animationDuration
                         easing.type: Easing.InOutCubic
                     }
                 }

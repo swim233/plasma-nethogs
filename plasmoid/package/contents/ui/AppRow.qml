@@ -5,12 +5,19 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.plasmoid
 
+import "Animation.js" as Animation
 import "Rates.js" as Rates
 
 /// One application in the expanded list. Clicking it reveals the individual
 /// pids that were merged into the row.
 Item {
     id: row
+
+    readonly property bool animate: Plasmoid.configuration.animationsEnabled
+    readonly property int hoverDuration:
+        Animation.scaled(Kirigami.Units.shortDuration, Plasmoid.configuration.animationSpeed)
+    readonly property int dimDuration:
+        Animation.scaled(Kirigami.Units.longDuration, Plasmoid.configuration.animationSpeed)
 
     required property bool binaryUnits
     required property string name
@@ -54,8 +61,9 @@ Item {
             color: Kirigami.Theme.highlightColor
             opacity: parent.containsMouse && row.pidCount > 1 ? 0.15 : 0
             Behavior on opacity {
+                enabled: row.animate
                 NumberAnimation {
-                    duration: Kirigami.Units.shortDuration
+                    duration: row.hoverDuration
                 }
             }
         }
@@ -72,8 +80,9 @@ Item {
         // the ListView's add and remove transitions animate.
         opacity: row.idle ? 0.45 : 1
         Behavior on opacity {
+            enabled: row.animate
             NumberAnimation {
-                duration: Kirigami.Units.longDuration
+                duration: row.dimDuration
                 easing.type: Easing.InOutQuad
             }
         }

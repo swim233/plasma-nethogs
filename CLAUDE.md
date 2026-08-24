@@ -143,6 +143,12 @@ never eased toward a new value: the tween would run for as long as a row takes
 to slide, so every rank change would come with its numbers racing, and an eased
 sparkline scale draws samples against a peak that is not the real one.
 
+Durations come from `Animation.scaled(Kirigami.Units.<base>Duration,
+Plasmoid.configuration.animationSpeed)`, keeping the system-wide animation
+speed as the baseline, and the on/off switch drives the `enabled` property of
+each Transition and Behavior rather than a zero duration. New animations should
+follow both.
+
 `syncModel()` removes departed rows before reordering, so an expiring row fades
 where it stands rather than being shuffled to the tail first. A steady list must
 emit no model operations at all.

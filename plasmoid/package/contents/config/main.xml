@@ -51,6 +51,17 @@
       <default>true</default>
     </entry>
 
+    <entry name="animationsEnabled" type="Bool">
+      <default>true</default>
+    </entry>
+
+    <!-- Percentage applied to Kirigami.Units.longDuration, so the system's own
+         animation speed stays the baseline and this scales it. Higher is
+         faster: 200 halves every duration. -->
+    <entry name="animationSpeed" type="Int">
+      <default>100</default>
+    </entry>
+
     <entry name="statePath" type="String">
       <default>/run/pnmd/state.json</default>
     </entry>

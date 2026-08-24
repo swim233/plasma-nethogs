@@ -77,6 +77,29 @@ msgid "Panel entry shows:"
 msgstr "面板中显示："
 
 #: ui/config/ConfigGeneral.qml
+msgid "Animations:"
+msgstr "动画："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Animate list changes"
+msgstr "为列表变化播放动画"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Speed:"
+msgstr "速度："
+
+#: ui/config/ConfigGeneral.qml
+msgctxt "animation speed as a multiple of the normal speed"
+msgid "%1×"
+msgstr "%1×"
+
+#: ui/config/ConfigGeneral.qml
+msgid ""
+"Scales the durations on top of the system-wide animation speed. Higher is "
+"faster."
+msgstr "在系统全局动画速度的基础上缩放时长，数值越大越快。"
+
+#: ui/config/ConfigGeneral.qml
 msgid "Busiest application"
 msgstr "占用最高的应用"
 

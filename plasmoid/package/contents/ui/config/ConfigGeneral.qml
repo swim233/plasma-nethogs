@@ -16,6 +16,8 @@ KCM.SimpleKCM {
     property alias cfg_showTotals: totalsBox.checked
     property alias cfg_showSparklines: sparklineBox.checked
     property alias cfg_binaryUnits: binaryBox.checked
+    property alias cfg_animationsEnabled: animationsBox.checked
+    property alias cfg_animationSpeed: animationSpeedSlider.value
     property alias cfg_statePath: statePathField.text
     property string cfg_compactDisplay
     property var cfg_excludeProcesses
@@ -32,6 +34,8 @@ KCM.SimpleKCM {
     property bool cfg_showTotalsDefault
     property bool cfg_showSparklinesDefault
     property bool cfg_binaryUnitsDefault
+    property bool cfg_animationsEnabledDefault
+    property int cfg_animationSpeedDefault
     property string cfg_statePathDefault
     property string cfg_compactDisplayDefault
     property var cfg_excludeProcessesDefault
@@ -93,6 +97,56 @@ KCM.SimpleKCM {
 
             Component.onCompleted: currentIndex = indexOfValue(page.cfg_compactDisplay)
             onActivated: page.cfg_compactDisplay = currentValue
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+
+        // ── Animation ────────────────────────────────────────────────────────
+
+        QQC2.CheckBox {
+            id: animationsBox
+            Kirigami.FormData.label: i18n("Animations:")
+            text: i18n("Animate list changes")
+        }
+
+        RowLayout {
+            Kirigami.FormData.label: i18n("Speed:")
+            spacing: Kirigami.Units.smallSpacing
+            enabled: animationsBox.checked
+
+            QQC2.Slider {
+                id: animationSpeedSlider
+
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                from: 25
+                to: 400
+                stepSize: 25
+                snapMode: QQC2.Slider.SnapAlways
+            }
+
+            QQC2.Label {
+                // Fixed width, so dragging the slider does not shift it about.
+                Layout.preferredWidth: speedMetrics.width
+                text: i18nc("animation speed as a multiple of the normal speed",
+                            "%1×", String(animationSpeedSlider.value / 100))
+
+                TextMetrics {
+                    id: speedMetrics
+                    font: parent.font
+                    text: i18nc("animation speed as a multiple of the normal speed",
+                                "%1×", "0.25")
+                }
+            }
+        }
+
+        QQC2.Label {
+            text: i18n("Scales the durations on top of the system-wide animation speed. Higher is faster.")
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
+            wrapMode: Text.WordWrap
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 20
         }
 
         Item {

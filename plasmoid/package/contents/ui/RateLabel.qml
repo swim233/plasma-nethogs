@@ -3,7 +3,9 @@ import QtQuick.Layouts
 
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.plasmoid
 
+import "Animation.js" as Animation
 import "Rates.js" as Rates
 
 /// A single "↓ 3.1 MiB/s" reading. Fixed-width so the panel entry does not
@@ -31,8 +33,10 @@ PlasmaComponents.Label {
     textFormat: Text.PlainText
 
     Behavior on opacity {
+        enabled: Plasmoid.configuration.animationsEnabled
         NumberAnimation {
-            duration: Kirigami.Units.longDuration
+            duration: Animation.scaled(Kirigami.Units.longDuration,
+                                       Plasmoid.configuration.animationSpeed)
             easing.type: Easing.InOutQuad
         }
     }
