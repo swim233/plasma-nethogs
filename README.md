@@ -2,6 +2,7 @@
 
 A KDE Plasma 6 widget that shows which applications are using the network right
 now, backed by an eBPF collector.
+[简体中文](README.zh-CN.md)
 
 Linux has no kernel interface for per-process network byte counts:
 `/proc/<pid>/net/*` is per network namespace, not per process, and
