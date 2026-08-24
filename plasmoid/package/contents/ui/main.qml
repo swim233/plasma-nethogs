@@ -17,7 +17,7 @@ PlasmoidItem {
     /// translated default".
     readonly property string title: Plasmoid.configuration.widgetTitle.length > 0
         ? Plasmoid.configuration.widgetTitle
-        : i18n("Network Top")
+        : i18n("Plasma NetHogs")
 
     /// "ok" | "unavailable" | "stale". Not named `status` to stay clear of
     /// Plasmoid.status.
@@ -73,10 +73,10 @@ PlasmoidItem {
     toolTipMainText: root.title
     toolTipSubText: {
         if (daemonStatus === "unavailable") {
-            return i18n("The pnmd service is not running.");
+            return i18n("The plasma-nethogsd service is not running.");
         }
         if (daemonStatus === "stale") {
-            return i18n("The pnmd service stopped responding.");
+            return i18n("The plasma-nethogsd service stopped responding.");
         }
         if (!topApp) {
             return i18n("No network activity.");

@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: plasma_applet_io.github.cloudnyko.procnetmonitor\n"
-"Report-Msgid-Bugs-To: https://github.com/cloudnyko/proc_net_monitor\n"
+"Project-Id-Version: plasma_applet_io.github.swim233.plasma-nethogs\n"
+"Report-Msgid-Bugs-To: https://github.com/swim233/plasma-nethogs\n"
 "PO-Revision-Date: 2026-08-24 12:30+0800\n"
-"Last-Translator: swim <cloudnyko@gmail.com>\n"
+"Last-Translator: swim <swim853279614@163.com>\n"
 "Language-Team: Chinese (Simplified)\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -31,10 +31,10 @@ msgstr "监控服务未运行"
 #: ui/FullRepresentation.qml
 msgid ""
 "Start it with:\n"
-"sudo systemctl enable --now pnmd"
+"sudo systemctl enable --now plasma-nethogsd"
 msgstr ""
 "启动命令：\n"
-"sudo systemctl enable --now pnmd"
+"sudo systemctl enable --now plasma-nethogsd"
 
 #: ui/FullRepresentation.qml
 msgid "No network activity"
@@ -49,7 +49,7 @@ msgid "Show a title"
 msgstr "显示标题"
 
 #: ui/config/ConfigGeneral.qml ui/main.qml
-msgid "Network Top"
+msgid "Plasma NetHogs"
 msgstr "网络占用"
 
 #: ui/config/ConfigGeneral.qml
@@ -163,12 +163,12 @@ msgid "Snapshot file:"
 msgstr "快照文件："
 
 #: ui/main.qml
-msgid "The pnmd service is not running."
-msgstr "pnmd 服务未运行。"
+msgid "The plasma-nethogsd service is not running."
+msgstr "plasma-nethogsd 服务未运行。"
 
 #: ui/main.qml
-msgid "The pnmd service stopped responding."
-msgstr "pnmd 服务已停止响应。"
+msgid "The plasma-nethogsd service stopped responding."
+msgstr "plasma-nethogsd 服务已停止响应。"
 
 #: ui/main.qml
 msgid "No network activity."

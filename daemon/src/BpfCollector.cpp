@@ -16,10 +16,10 @@
 // bpftool's generated skeleton casts through char*, which trips -Wcast-align.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
-#include "netmon.skel.h"
+#include "plasma-nethogs.skel.h"
 #pragma GCC diagnostic pop
 
-#include "netmon_types.h"
+#include "plasma-nethogs_types.h"
 
 namespace
 {
@@ -44,7 +44,7 @@ QString errnoString(int err)
 BpfCollector::~BpfCollector()
 {
     if (m_skel) {
-        netmon_bpf__destroy(m_skel);
+        plasma_nethogs_bpf__destroy(m_skel);
         m_skel = nullptr;
     }
 }
@@ -60,26 +60,26 @@ bool BpfCollector::load(QString *error)
 
     if (!QFile::exists(QStringLiteral("/sys/kernel/btf/vmlinux"))) {
         return fail(QStringLiteral(
-            "/sys/kernel/btf/vmlinux is missing. pnmd needs a kernel built with "
+            "/sys/kernel/btf/vmlinux is missing. plasma-nethogsd needs a kernel built with "
             "CONFIG_DEBUG_INFO_BTF=y."));
     }
 
     libbpf_set_print(libbpfPrint);
 
-    m_skel = netmon_bpf__open();
+    m_skel = plasma_nethogs_bpf__open();
     if (!m_skel) {
-        return fail(QStringLiteral("netmon_bpf__open() failed: %1").arg(errnoString(errno)));
+        return fail(QStringLiteral("plasma_nethogs_bpf__open() failed: %1").arg(errnoString(errno)));
     }
 
-    if (const int err = netmon_bpf__load(m_skel); err) {
-        netmon_bpf__destroy(m_skel);
+    if (const int err = plasma_nethogs_bpf__load(m_skel); err) {
+        plasma_nethogs_bpf__destroy(m_skel);
         m_skel = nullptr;
-        return fail(QStringLiteral("Loading the BPF object failed: %1. Check that pnmd has "
+        return fail(QStringLiteral("Loading the BPF object failed: %1. Check that plasma-nethogsd has "
                                    "CAP_BPF and CAP_PERFMON (or runs as root).")
                         .arg(errnoString(err)));
     }
 
-    // Attached one at a time rather than with netmon_bpf__attach() so that a
+    // Attached one at a time rather than with plasma_nethogs_bpf__attach() so that a
     // failure names the hook, and so that the IPv6 UDP handler can be missing
     // on a kernel built without IPv6 without taking the daemon down.
     const struct {
@@ -101,7 +101,7 @@ bool BpfCollector::load(QString *error)
             if (!attachment.required) {
                 continue;
             }
-            netmon_bpf__destroy(m_skel);
+            plasma_nethogs_bpf__destroy(m_skel);
             m_skel = nullptr;
             return fail(QStringLiteral("Attaching fexit/%1 failed: %2. Confirm the kernel exports "
                                        "it with `bpftool btf dump file /sys/kernel/btf/vmlinux "
@@ -113,7 +113,7 @@ bool BpfCollector::load(QString *error)
 
     m_mapFd = bpf_map__fd(m_skel->maps.traffic);
     if (m_mapFd < 0) {
-        netmon_bpf__destroy(m_skel);
+        plasma_nethogs_bpf__destroy(m_skel);
         m_skel = nullptr;
         return fail(QStringLiteral("The traffic map has no file descriptor."));
     }
@@ -133,7 +133,7 @@ QList<RawSample> BpfCollector::poll() const
     bool haveKey = false;
 
     while (bpf_map_get_next_key(m_mapFd, haveKey ? &key : nullptr, &nextKey) == 0) {
-        netmon_val value{};
+        plasma_nethogs_val value{};
         if (bpf_map_lookup_elem(m_mapFd, &nextKey, &value) == 0) {
             RawSample sample;
             sample.tgid = nextKey;

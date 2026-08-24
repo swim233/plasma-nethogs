@@ -54,7 +54,7 @@ KCM.SimpleKCM {
 
             Layout.preferredWidth: Kirigami.Units.gridUnit * 20
             enabled: titleBox.checked
-            placeholderText: i18n("Network Top")
+            placeholderText: i18n("Plasma NetHogs")
         }
 
         QQC2.SpinBox {

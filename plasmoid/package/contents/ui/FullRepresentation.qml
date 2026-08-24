@@ -115,7 +115,7 @@ Item {
                 text: full.main.daemonStatus === "stale"
                     ? i18n("The monitoring service stopped responding")
                     : i18n("The monitoring service is not running")
-                explanation: i18n("Start it with:\nsudo systemctl enable --now pnmd")
+                explanation: i18n("Start it with:\nsudo systemctl enable --now plasma-nethogsd")
             }
 
             PlasmaExtras.PlaceholderMessage {

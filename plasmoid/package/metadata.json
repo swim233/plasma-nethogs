@@ -3,7 +3,7 @@
     "KPlugin": {
         "Authors": [
             {
-                "Email": "cloudnyko@gmail.com",
+                "Email": "swim853279614@163.com",
                 "Name": "swim"
             }
         ],
@@ -11,12 +11,12 @@
         "Description": "Shows which applications are using the network right now",
         "Description[zh_CN]": "显示当前占用网络带宽最多的应用",
         "Icon": "network-transmit-receive",
-        "Id": "io.github.cloudnyko.procnetmonitor",
+        "Id": "io.github.swim233.plasma-nethogs",
         "License": "GPL-2.0-or-later",
-        "Name": "Network Top",
+        "Name": "Plasma NetHogs",
         "Name[zh_CN]": "网络占用",
         "Version": "1.0",
-        "Website": "https://github.com/cloudnyko/proc_net_monitor"
+        "Website": "https://github.com/swim233/plasma-nethogs"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

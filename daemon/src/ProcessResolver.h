@@ -6,7 +6,7 @@
 #include <QSet>
 #include <QString>
 
-/// Everything pnmd knows about one process. Deliberately no icon: resolving
+/// Everything plasma-nethogsd knows about one process. Deliberately no icon: resolving
 /// icon names means reading .desktop files out of the user's home, which the
 /// systemd unit blocks with ProtectHome=yes. The plasmoid does that lookup
 /// instead, where it also gets the user's locale for free.

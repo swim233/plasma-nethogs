@@ -29,7 +29,7 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
-#include "netmon_types.h"
+#include "plasma-nethogs_types.h"
 
 char LICENSE[] SEC("license") = "GPL";
 
@@ -38,12 +38,12 @@ char LICENSE[] SEC("license") = "GPL";
 
 // Keyed by thread group id, i.e. what userspace calls the pid. LRU rather
 // than a plain hash so a fork storm evicts cold entries instead of failing
-// to insert; pnmd also deletes entries for dead pids on every tick.
+// to insert; plasma-nethogsd also deletes entries for dead pids on every tick.
 struct {
 	__uint(type, BPF_MAP_TYPE_LRU_HASH);
 	__uint(max_entries, 8192);
 	__type(key, __u32);
-	__type(value, struct netmon_val);
+	__type(value, struct plasma_nethogs_val);
 } traffic SEC(".maps");
 
 static __always_inline bool is_loopback(struct sock *sk, __u16 family)
@@ -83,7 +83,7 @@ static __always_inline void account(struct sock *sk, long bytes, bool is_rx)
 
 	__u32 tgid = bpf_get_current_pid_tgid() >> 32;
 
-	struct netmon_val *val = bpf_map_lookup_elem(&traffic, &tgid);
+	struct plasma_nethogs_val *val = bpf_map_lookup_elem(&traffic, &tgid);
 	if (val) {
 		if (is_rx)
 			__sync_fetch_and_add(&val->rx, (__u64)bytes);
@@ -94,7 +94,7 @@ static __always_inline void account(struct sock *sk, long bytes, bool is_rx)
 
 	// comm is captured here rather than read from /proc so that a process
 	// which exits inside the sampling window still has a readable name.
-	struct netmon_val init = {};
+	struct plasma_nethogs_val init = {};
 	bpf_get_current_comm(&init.comm, sizeof(init.comm));
 	if (is_rx)
 		init.rx = (__u64)bytes;
@@ -122,7 +122,7 @@ int BPF_PROG(fexit_udp_sendmsg, struct sock *sk, struct msghdr *msg, size_t len,
 }
 
 // int udpv6_sendmsg(struct sock *sk, struct msghdr *msg, size_t len)
-// Absent when the kernel was built without IPv6, so pnmd treats this one as
+// Absent when the kernel was built without IPv6, so plasma-nethogsd treats this one as
 // optional at attach time.
 SEC("fexit/udpv6_sendmsg")
 int BPF_PROG(fexit_udpv6_sendmsg, struct sock *sk, struct msghdr *msg, size_t len, int ret)

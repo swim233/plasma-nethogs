@@ -3,7 +3,7 @@ import QtQuick
 import org.kde.plasma.plasma5support as P5Support
 
 /**
- * Reads pnmd's JSON snapshot.
+ * Reads plasma-nethogsd's JSON snapshot.
  *
  * This is the only file coupled to how the daemon publishes its data.
  *
@@ -21,7 +21,7 @@ import org.kde.plasma.plasma5support as P5Support
 Item {
     id: root
 
-    property string path: "/run/pnmd/state.json"
+    property string path: "/run/plasma-nethogsd/state.json"
     property int pollInterval: 1000
     /// A snapshot older than this means the daemon stopped without cleaning up.
     property int staleAfterMs: 5000

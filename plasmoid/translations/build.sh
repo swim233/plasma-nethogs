@@ -4,7 +4,7 @@
 # .po sources rather than generated at install time.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
-domain=plasma_applet_io.github.cloudnyko.procnetmonitor
+domain=plasma_applet_io.github.swim233.plasma-nethogs
 
 for po in "$here"/*.po; do
     lang=$(basename "$po" .po)

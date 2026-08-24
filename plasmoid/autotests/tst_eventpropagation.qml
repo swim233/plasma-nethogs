@@ -73,7 +73,7 @@ TestCase {
                     }
                     RowLayout {
                         anchors.fill: parent
-                        PlasmaComponents.Label { Layout.fillWidth: true; text: "Network Top" }
+                        PlasmaComponents.Label { Layout.fillWidth: true; text: "Plasma NetHogs" }
                         PlasmaComponents.Label { text: "↓ 1.0 MiB/s" }
                     }
                 }

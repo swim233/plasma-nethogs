@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(proc_net_monitor VERSION 1.0 LANGUAGES C CXX)
+project(plasma-nethogs VERSION 1.0 LANGUAGES C CXX)
 
 set(QT_MIN_VERSION 6.6.0)
 set(KF_MIN_VERSION 6.0.0)
@@ -24,9 +24,9 @@ add_subdirectory(daemon)
 add_subdirectory(plasmoid)
 
 # The unit needs the resolved absolute path of the installed binary.
-configure_file(systemd/pnmd.service.in ${CMAKE_CURRENT_BINARY_DIR}/pnmd.service @ONLY)
+configure_file(systemd/plasma-nethogsd.service.in ${CMAKE_CURRENT_BINARY_DIR}/plasma-nethogsd.service @ONLY)
 # ECM's SYSTEMDUNITDIR is lib/systemd, the parent of both unit trees.
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pnmd.service
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plasma-nethogsd.service
         DESTINATION ${KDE_INSTALL_SYSTEMDUNITDIR}/system)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

@@ -5,7 +5,7 @@
 #include <QList>
 #include <QString>
 
-struct netmon_bpf;
+struct plasma_nethogs_bpf;
 
 /// One process's cumulative byte counters as read straight out of the BPF map.
 struct RawSample {
@@ -28,7 +28,7 @@ public:
     BpfCollector &operator=(const BpfCollector &) = delete;
 
     /// Loads and attaches. On failure returns false and fills @p error with a
-    /// diagnostic aimed at a human reading `systemctl status pnmd`.
+    /// diagnostic aimed at a human reading `systemctl status plasma-nethogsd`.
     bool load(QString *error);
 
     QList<RawSample> poll() const;
@@ -37,6 +37,6 @@ public:
     void forget(quint32 tgid) const;
 
 private:
-    netmon_bpf *m_skel = nullptr;
+    plasma_nethogs_bpf *m_skel = nullptr;
     int m_mapFd = -1;
 };

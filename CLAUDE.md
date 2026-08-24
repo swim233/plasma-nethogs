@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 A KDE Plasma 6 widget showing which applications are using the network, fed by
-an eBPF collector. Two independent halves: `pnmd`, a privileged C++/QtCore
+an eBPF collector. Two independent halves: `plasma-nethogsd`, a privileged C++/QtCore
 daemon, and a QML plasmoid. They are coupled only by a JSON snapshot file.
 
 `README.md` documents the measurement boundaries and the user-facing settings;
@@ -18,7 +18,7 @@ development packages.
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build build
 sudo cmake --install build
-sudo systemctl daemon-reload && sudo systemctl enable --now pnmd
+sudo systemctl daemon-reload && sudo systemctl enable --now plasma-nethogsd
 ```
 
 `vmlinux.h` and the BPF skeleton are generated at build time from the running
@@ -32,14 +32,14 @@ root.
 **Daemon** — run it by hand instead of restarting the service:
 
 ```sh
-sudo ./build/bin/pnmd --verbose --interval 1000 --out /tmp/state.json
+sudo ./build/bin/plasma-nethogsd --verbose --interval 1000 --out /tmp/state.json
 ```
 
 **Plasmoid** — install to `~/.local` (no root) and view it standalone:
 
 ```sh
 kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
-plasmoidviewer -a io.github.cloudnyko.procnetmonitor
+plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
 
 A `~/.local` copy shadows the `/usr` one, and `plasmashell` caches QML — changes
@@ -67,8 +67,8 @@ xmllint --noout plasmoid/package/contents/config/main.xml
 ```
 eBPF ─ fexit probes accumulate per-tgid counters in an LRU hash
   │
-pnmd ─ diffs the counters, resolves /proc identity, groups by application,
-  │    writes /run/pnmd/state.json atomically once a second
+plasma-nethogsd ─ diffs the counters, resolves /proc identity, groups by application,
+  │    writes /run/plasma-nethogsd/state.json atomically once a second
   │
 plasmoid ─ reads the snapshot, applies exclusions and the linger window,
            reconciles a ListModel so each change animates

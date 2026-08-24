@@ -1,4 +1,4 @@
-# proc_net_monitor
+# plasma-nethogs
 
 A KDE Plasma 6 widget that shows which applications are using the network right
 now, backed by an eBPF collector.
@@ -21,9 +21,9 @@ bandwidth?" on a Plasma desktop currently means opening a terminal and running
 └────────────────────┬───────────────────────────────┘
                      │ read once per second
 ┌────────────────────▼───────────────────────────────┐
-│ pnmd — privileged daemon (C++/QtCore + libbpf)     │
+│ plasma-nethogsd — privileged daemon (C++/QtCore + libbpf)     │
 │ diffs counters, resolves /proc identity, groups by │
-│ application, writes /run/pnmd/state.json atomically│
+│ application, writes /run/plasma-nethogsd/state.json atomically│
 └────────────────────┬───────────────────────────────┘
                      │
 ┌────────────────────▼───────────────────────────────┐
@@ -125,17 +125,17 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build build
 sudo cmake --install build
 sudo systemctl daemon-reload
-sudo systemctl enable --now pnmd
+sudo systemctl enable --now plasma-nethogsd
 ```
 
-Add *Network Top* to a panel or the desktop. Right-click it for the usual
+Add *Plasma NetHogs* to a panel or the desktop. Right-click it for the usual
 Configure / Remove menu.
 
 ### Settings
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| Title | *Network Top* | Heading shown above the list; can be hidden |
+| Title | *Plasma NetHogs* | Heading shown above the list; can be hidden |
 | Applications to list | 5 | How many rows the list holds |
 | Refresh interval | 1000 ms | Should match the daemon's own interval |
 | Keep idle applications for | 10 s | Grace period before a quiet application fades out |
@@ -143,7 +143,7 @@ Configure / Remove menu.
 | Speed | 1× | Scales the durations on top of the system-wide animation speed |
 | Exclude processes | empty | Names to leave out, and to subtract from the totals |
 | Panel entry shows | busiest application | What the compact panel entry displays |
-| Snapshot file | `/run/pnmd/state.json` | Where to read the daemon's output |
+| Snapshot file | `/run/plasma-nethogsd/state.json` | Where to read the daemon's output |
 
 An application that stops transferring keeps its place in the list, dimmed and
 reading zero, until its grace period expires. Ranking by a rate that moves
@@ -151,7 +151,7 @@ every second means bursty applications would otherwise flicker in and out once
 a second. Active applications always claim the available rows first, so a
 lingering one can never displace a transferring one.
 
-The kernel must have `CONFIG_DEBUG_INFO_BTF=y`; `pnmd` says so explicitly if
+The kernel must have `CONFIG_DEBUG_INFO_BTF=y`; `plasma-nethogsd` says so explicitly if
 `/sys/kernel/btf/vmlinux` is missing. `vmlinux.h` is generated at build time
 from the build machine's BTF, but CO-RE relocations are resolved against the
 running kernel, so the binary is not tied to the kernel it was built on.
@@ -183,18 +183,18 @@ with:
 
 ```sh
 kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
-plasmoidviewer -a io.github.cloudnyko.procnetmonitor
+plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
 
 QML warnings are routed to the journal unless you ask otherwise:
 
 ```sh
-QT_ASSUME_STDERR_HAS_CONSOLE=1 plasmoidviewer -a io.github.cloudnyko.procnetmonitor
+QT_ASSUME_STDERR_HAS_CONSOLE=1 plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
 
 ## Privileges
 
-`pnmd` runs as a system service with three capabilities and no more:
+`plasma-nethogsd` runs as a system service with three capabilities and no more:
 
 - `CAP_BPF` and `CAP_PERFMON` — load and attach the programs.
 - `CAP_SYS_PTRACE` — `readlink()` on another user's `/proc/<pid>/exe`.
@@ -202,7 +202,7 @@ QT_ASSUME_STDERR_HAS_CONSOLE=1 plasmoidviewer -a io.github.cloudnyko.procnetmoni
 The unit also sets `ProtectSystem=strict`, `ProtectHome=yes`,
 `NoNewPrivileges=yes`, a capability bounding set, and a syscall filter.
 
-`/run/pnmd/state.json` is world-readable, because the widget runs as the
+`/run/plasma-nethogsd/state.json` is world-readable, because the widget runs as the
 desktop user. On a machine with several login users that discloses which
 applications are using the network. To restrict it, set
 `RuntimeDirectoryMode=0750` in the unit plus a group the desktop user belongs
@@ -226,7 +226,7 @@ nothing else — that file is the only one coupled to the transport.
 
 ## Snapshot format
 
-`/run/pnmd/state.json`, version 1. All rates are **bytes per second**.
+`/run/plasma-nethogsd/state.json`, version 1. All rates are **bytes per second**.
 
 ```json
 {
@@ -273,12 +273,12 @@ of the resident size is QtCore; the cgroup's own peak is around 8 MB.
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `--interval <ms>` | 1000 | Sampling interval; match the widget's setting |
-| `--out <path>` | `/run/pnmd/state.json` | Snapshot location |
+| `--out <path>` | `/run/plasma-nethogsd/state.json` | Snapshot location |
 | `--top <n>` | 20 | Applications published per snapshot |
 | `--verbose` | off | Log each snapshot |
 
 Running it by hand is the quickest way to check the collector on its own:
 
 ```sh
-sudo ./build/bin/pnmd --verbose --interval 1000 --out /tmp/state.json
+sudo ./build/bin/plasma-nethogsd --verbose --interval 1000 --out /tmp/state.json
 ```

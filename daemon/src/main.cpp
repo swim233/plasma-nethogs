@@ -19,7 +19,7 @@
 
 // Qt suppresses info-level output by default; this category is the daemon's
 // only channel to the journal, so opt it in.
-Q_LOGGING_CATEGORY(log, "pnmd", QtInfoMsg)
+Q_LOGGING_CATEGORY(log, "plasma-nethogsd", QtInfoMsg)
 
 namespace
 {
@@ -57,7 +57,7 @@ void installSignalHandler(QCoreApplication *app)
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName(QStringLiteral("pnmd"));
+    QCoreApplication::setApplicationName(QStringLiteral("plasma-nethogsd"));
     QCoreApplication::setApplicationVersion(QStringLiteral("1.0"));
 
     QCommandLineParser parser;
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
         QStringLiteral("ms"), QStringLiteral("1000"));
     const QCommandLineOption outOption(
         QStringLiteral("out"), QStringLiteral("Path of the JSON snapshot to publish."),
-        QStringLiteral("path"), QStringLiteral("/run/pnmd/state.json"));
+        QStringLiteral("path"), QStringLiteral("/run/plasma-nethogsd/state.json"));
     const QCommandLineOption topOption(
         QStringLiteral("top"), QStringLiteral("Number of applications to publish."),
         QStringLiteral("n"), QStringLiteral("20"));
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     const JsonWriter writer(parser.value(outOption));
 
     // systemd's RuntimeDirectory= normally creates this; do it ourselves too so
-    // running pnmd by hand for debugging works.
+    // running plasma-nethogsd by hand for debugging works.
     const QDir parentDir = QFileInfo(writer.path()).absoluteDir();
     if (!parentDir.exists() && !parentDir.mkpath(QStringLiteral("."))) {
         qCCritical(log) << "Cannot create" << parentDir.absolutePath();

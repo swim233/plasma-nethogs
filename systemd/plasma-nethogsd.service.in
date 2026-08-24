@@ -1,16 +1,16 @@
 [Unit]
-Description=Per-process network monitor daemon
-Documentation=https://github.com/cloudnyko/proc_net_monitor
+Description=Plasma NetHogs daemon (per-process network monitor)
+Documentation=https://github.com/swim233/plasma-nethogs
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=@KDE_INSTALL_FULL_BINDIR@/pnmd --interval 1000
+ExecStart=@KDE_INSTALL_FULL_BINDIR@/plasma-nethogsd --interval 1000
 Restart=on-failure
 RestartSec=5
 
-# systemd creates and tears down /run/pnmd for us.
-RuntimeDirectory=pnmd
+# systemd creates and tears down /run/plasma-nethogsd for us.
+RuntimeDirectory=plasma-nethogsd
 RuntimeDirectoryMode=0755
 
 # CAP_BPF + CAP_PERFMON load and attach the programs.

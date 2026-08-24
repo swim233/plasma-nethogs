@@ -16,8 +16,8 @@
       <default>true</default>
     </entry>
 
-    <!-- Should match the interval pnmd was started with. Note that XML
-         forbids a double hyphen inside a comment, so pnmd's option cannot be
+    <!-- Should match the interval plasma-nethogsd was started with. Note that XML
+         forbids a double hyphen inside a comment, so plasma-nethogsd's option cannot be
          spelled out here; see README.md. -->
     <entry name="refreshInterval" type="Int">
       <default>1000</default>
@@ -63,7 +63,7 @@
     </entry>
 
     <entry name="statePath" type="String">
-      <default>/run/pnmd/state.json</default>
+      <default>/run/plasma-nethogsd/state.json</default>
     </entry>
 
     <!-- Applied in the widget rather than in the daemon so that changing it

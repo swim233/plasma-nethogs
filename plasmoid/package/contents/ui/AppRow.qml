@@ -94,7 +94,7 @@ Item {
             Kirigami.Icon {
                 Layout.preferredWidth: Kirigami.Units.iconSizes.small
                 Layout.preferredHeight: Kirigami.Units.iconSizes.small
-                // pnmd resolves Icon= from the .desktop file when it can; the
+                // plasma-nethogsd resolves Icon= from the .desktop file when it can; the
                 // executable name is a decent guess for everything else.
                 source: row.icon.length > 0 ? row.icon : row.exeName
                 fallback: "application-x-executable"
