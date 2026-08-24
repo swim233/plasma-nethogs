@@ -111,6 +111,32 @@ has no business reading home directories to render an icon.
 
 ## Building and installing
 
+### On Arch, from the AUR
+
+```sh
+paru -S plasma-nethogs-git      # or yay, or any other helper
+```
+
+Or without a helper:
+
+```sh
+git clone https://aur.archlinux.org/plasma-nethogs-git.git
+cd plasma-nethogs-git
+makepkg -si
+```
+
+It is a `-git` package because there is no tagged release yet: `pkgver()`
+resolves to the commit it was built from, so upgrading means rebuilding against
+whatever `main` holds at the time.
+
+The build reads `/sys/kernel/btf/vmlinux` to generate `vmlinux.h`, so the
+*building* machine needs `CONFIG_DEBUG_INFO_BTF=y` — Arch's own kernels have it,
+and a `devtools` chroot works because those mount `/sys`. CO-RE resolves the
+relocations against the running kernel at load time, so the resulting package is
+not tied to the kernel that built it.
+
+### From source
+
 Requires: Qt 6 Core, KF6 (Package), ECM, Plasma 6 development files, libbpf ≥
 1.0, clang, and `bpftool`. On Arch, `bpftool` is in the `bpf` package:
 
@@ -125,6 +151,16 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build build
 sudo cmake --install build
 sudo systemctl daemon-reload
+```
+
+`packaging/` holds both PKGBUILDs, and `packaging/arch` builds the checkout it
+sits in rather than fetching a source — `cd packaging/arch && makepkg -si` gives
+a package pacman tracks, which is a good deal easier to take back out again than
+a bare `cmake --install`.
+
+### First run
+
+```sh
 sudo systemctl enable --now plasma-nethogsd
 ```
 
