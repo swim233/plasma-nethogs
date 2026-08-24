@@ -154,6 +154,26 @@ The kernel must have `CONFIG_DEBUG_INFO_BTF=y`; `pnmd` says so explicitly if
 from the build machine's BTF, but CO-RE relocations are resolved against the
 running kernel, so the binary is not tied to the kernel it was built on.
 
+### A trap worth knowing about
+
+Plasma shows a widget's Configure / Remove menu when a right click reaches the
+containment underneath it. Several QtQuick Controls accept the press instead,
+and then the menu silently never appears: the widget keeps working, and nothing
+is logged. `PlasmaExtras.Representation`, `PlasmaExtras.PlasmoidHeading` and
+`PlasmaComponents.ScrollView` are all in that group — and all three are the
+obvious components to build a full representation from.
+
+`FullRepresentation.qml` avoids them, using a plain `Item` root, a
+`KSvg.FrameSvgItem` heading and a bare `ListView` with an attached `ScrollBar`.
+`plasmoid/autotests/tst_eventpropagation.qml` probes each component and asserts
+that the resulting structure passes a right click through:
+
+```sh
+QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input plasmoid/autotests
+```
+
+Anything new that spans the applet area should be checked against it first.
+
 ### Iterating on the widget
 
 The plasmoid alone can be installed without root, which is much faster to work

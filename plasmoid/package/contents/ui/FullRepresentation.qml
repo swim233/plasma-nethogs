@@ -2,87 +2,132 @@ import QtQuick
 import QtQuick.Layouts
 
 import org.kde.kirigami as Kirigami
+import org.kde.ksvg as KSvg
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
 import "Rates.js" as Rates
 
-PlasmaExtras.Representation {
+/**
+ * Deliberately built without PlasmaExtras.Representation, PlasmoidHeading or
+ * PlasmaComponents.ScrollView, which would be the obvious choices here.
+ *
+ * All three swallow right clicks, so the containment never sees the press and
+ * the widget gets no Configure/Remove menu. The failure is silent: everything
+ * else about the widget works, and nothing is logged. See
+ * autotests/tst_eventpropagation.qml, which probes each component and asserts
+ * that the structure below lets a right click through.
+ *
+ * Anything that fills the applet area has to be checked against that test
+ * before being used here. Item, ColumnLayout, ListView, Label, Kirigami.Icon,
+ * KSvg.FrameSvgItem, PlaceholderMessage and an attached ScrollBar are known to
+ * be safe.
+ */
+Item {
     id: full
 
     required property PlasmoidItem main
+
+    readonly property bool online: main.daemonStatus === "ok"
+    readonly property bool headerVisible:
+        (Plasmoid.configuration.showTitle || Plasmoid.configuration.showTotals) && online
 
     Layout.minimumWidth: Kirigami.Units.gridUnit * 20
     Layout.minimumHeight: Kirigami.Units.gridUnit * 12
     Layout.preferredWidth: Kirigami.Units.gridUnit * 24
     Layout.preferredHeight: Kirigami.Units.gridUnit * 16
 
-    header: PlasmaExtras.PlasmoidHeading {
-        contentItem: RowLayout {
-            spacing: Kirigami.Units.smallSpacing
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
 
-            PlasmaExtras.Heading {
-                Layout.fillWidth: true
-                level: 4
-                text: full.main.title
-                visible: Plasmoid.configuration.showTitle
-                elide: Text.ElideRight
-                textFormat: Text.PlainText
+        Item {
+            id: heading
+
+            Layout.fillWidth: true
+            implicitHeight: headingContent.implicitHeight + Kirigami.Units.smallSpacing * 2
+            visible: full.headerVisible
+
+            // Matches what PlasmoidHeading would have drawn.
+            Kirigami.Theme.colorSet: Kirigami.Theme.Header
+            Kirigami.Theme.inherit: false
+
+            KSvg.FrameSvgItem {
+                anchors.fill: parent
+                imagePath: "widgets/plasmoidheading"
+                prefix: "header"
             }
 
-            // Keeps the readings hard right when the title is hidden.
-            Item {
-                Layout.fillWidth: !Plasmoid.configuration.showTitle
-            }
+            RowLayout {
+                id: headingContent
 
-            RateLabel {
-                down: true
-                value: full.main.totalRx
-                binaryUnits: full.main.binaryUnits
-                visible: Plasmoid.configuration.showTotals
-            }
+                anchors.fill: parent
+                anchors.leftMargin: Kirigami.Units.smallSpacing
+                anchors.rightMargin: Kirigami.Units.smallSpacing
+                spacing: Kirigami.Units.smallSpacing
 
-            RateLabel {
-                down: false
-                value: full.main.totalTx
-                binaryUnits: full.main.binaryUnits
-                visible: Plasmoid.configuration.showTotals
+                PlasmaExtras.Heading {
+                    Layout.fillWidth: true
+                    level: 4
+                    text: full.main.title
+                    visible: Plasmoid.configuration.showTitle
+                    elide: Text.ElideRight
+                    textFormat: Text.PlainText
+                }
+
+                // Keeps the readings hard right when the title is hidden.
+                Item {
+                    Layout.fillWidth: !Plasmoid.configuration.showTitle
+                }
+
+                RateLabel {
+                    down: true
+                    value: full.main.totalRx
+                    binaryUnits: full.main.binaryUnits
+                    visible: Plasmoid.configuration.showTotals
+                }
+
+                RateLabel {
+                    down: false
+                    value: full.main.totalTx
+                    binaryUnits: full.main.binaryUnits
+                    visible: Plasmoid.configuration.showTotals
+                }
             }
         }
 
-        visible: (Plasmoid.configuration.showTitle || Plasmoid.configuration.showTotals)
-            && full.main.daemonStatus === "ok"
-    }
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-    contentItem: Item {
-        PlasmaExtras.PlaceholderMessage {
-            anchors.centerIn: parent
-            width: parent.width - Kirigami.Units.gridUnit * 4
-            visible: full.main.daemonStatus !== "ok"
+            PlasmaExtras.PlaceholderMessage {
+                anchors.centerIn: parent
+                width: parent.width - Kirigami.Units.gridUnit * 4
+                visible: !full.online
 
-            iconName: "network-offline"
-            text: full.main.daemonStatus === "stale"
-                ? i18n("The monitoring service stopped responding")
-                : i18n("The monitoring service is not running")
-            explanation: i18n("Start it with:\nsudo systemctl enable --now pnmd")
-        }
+                iconName: "network-offline"
+                text: full.main.daemonStatus === "stale"
+                    ? i18n("The monitoring service stopped responding")
+                    : i18n("The monitoring service is not running")
+                explanation: i18n("Start it with:\nsudo systemctl enable --now pnmd")
+            }
 
-        PlasmaExtras.PlaceholderMessage {
-            anchors.centerIn: parent
-            width: parent.width - Kirigami.Units.gridUnit * 4
-            visible: full.main.daemonStatus === "ok" && list.count === 0
+            PlasmaExtras.PlaceholderMessage {
+                anchors.centerIn: parent
+                width: parent.width - Kirigami.Units.gridUnit * 4
+                visible: full.online && list.count === 0
 
-            iconName: "network-idle"
-            text: i18n("No network activity")
-        }
-
-        PlasmaComponents.ScrollView {
-            anchors.fill: parent
-            visible: full.main.daemonStatus === "ok" && list.count > 0
+                iconName: "network-idle"
+                text: i18n("No network activity")
+            }
 
             ListView {
                 id: list
+
+                anchors.fill: parent
+                anchors.margins: Kirigami.Units.smallSpacing
+                visible: full.online && list.count > 0
 
                 model: full.main.apps
                 clip: true
@@ -90,6 +135,8 @@ PlasmaExtras.Representation {
                 // Recycling a delegate skips the add and remove transitions it
                 // would otherwise play, and loses the expanded state of a row.
                 reuseItems: false
+
+                PlasmaComponents.ScrollBar.vertical: PlasmaComponents.ScrollBar {}
 
                 delegate: AppRow {
                     required property var model
