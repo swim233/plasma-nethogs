@@ -1,0 +1,156 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_io.github.cloudnyko.procnetmonitor\n"
+"Report-Msgid-Bugs-To: https://github.com/cloudnyko/proc_net_monitor\n"
+"PO-Revision-Date: 2026-08-24 12:30+0800\n"
+"Last-Translator: swim <cloudnyko@gmail.com>\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: config/config.qml
+msgid "General"
+msgstr "常规"
+
+#: ui/AppRow.qml
+msgctxt "process name and its pid"
+msgid "%1 (%2)"
+msgstr "%1（%2）"
+
+#: ui/FullRepresentation.qml
+msgid "The monitoring service stopped responding"
+msgstr "监控服务已停止响应"
+
+#: ui/FullRepresentation.qml
+msgid "The monitoring service is not running"
+msgstr "监控服务未运行"
+
+#: ui/FullRepresentation.qml
+msgid ""
+"Start it with:\n"
+"sudo systemctl enable --now pnmd"
+msgstr ""
+"启动命令：\n"
+"sudo systemctl enable --now pnmd"
+
+#: ui/FullRepresentation.qml
+msgid "No network activity"
+msgstr "无网络活动"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Title:"
+msgstr "标题："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Show a title"
+msgstr "显示标题"
+
+#: ui/config/ConfigGeneral.qml ui/main.qml
+msgid "Network Top"
+msgstr "网络占用"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Applications to list:"
+msgstr "列表显示数量："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Show:"
+msgstr "显示："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Total throughput"
+msgstr "总吞吐量"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Rate history graphs"
+msgstr "速率历史曲线"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Binary units (KiB/s) instead of decimal (kB/s)"
+msgstr "使用二进制单位（KiB/s）而非十进制（kB/s）"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Panel entry shows:"
+msgstr "面板中显示："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Busiest application"
+msgstr "占用最高的应用"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Busiest application's icon with total throughput"
+msgstr "占用最高应用的图标与总吞吐量"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Refresh interval:"
+msgstr "刷新间隔："
+
+#: ui/config/ConfigGeneral.qml
+msgid "%1 ms"
+msgstr "%1 毫秒"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Match this to the interval the daemon was started with."
+msgstr "应与守护进程启动时所用的间隔保持一致。"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Keep idle applications for:"
+msgstr "闲置应用保留时长："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Remove immediately"
+msgstr "立即移除"
+
+#: ui/config/ConfigGeneral.qml
+msgid "%1 second"
+msgid_plural "%1 seconds"
+msgstr[0] "%1 秒"
+
+#: ui/config/ConfigGeneral.qml
+msgid ""
+"An application that stops transferring stays in the list, dimmed, for this "
+"long before fading out. Without it, anything bursty flickers in and out once "
+"a second."
+msgstr ""
+"停止传输的应用会以变暗状态在列表中保留这段时间，之后淡出。否则突发性的流量会"
+"让列表每秒闪进闪出。"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Exclude processes:"
+msgstr "排除进程："
+
+#: ui/config/ConfigGeneral.qml
+msgid "Comma-separated process names"
+msgstr "以逗号分隔的进程名"
+
+#: ui/config/ConfigGeneral.qml
+msgid ""
+"A TUN-mode proxy relays traffic through its own sockets, so every byte is "
+"counted twice — once for the application and once for the proxy. Excluding "
+"the proxy here restores the real figures."
+msgstr ""
+"TUN 模式代理会通过自己的套接字中转流量，因此每个字节都会被统计两次——一次记在"
+"应用上，一次记在代理上。在此排除代理进程即可还原真实数值。"
+
+#: ui/config/ConfigGeneral.qml
+msgid "Snapshot file:"
+msgstr "快照文件："
+
+#: ui/main.qml
+msgid "The pnmd service is not running."
+msgstr "pnmd 服务未运行。"
+
+#: ui/main.qml
+msgid "The pnmd service stopped responding."
+msgstr "pnmd 服务已停止响应。"
+
+#: ui/main.qml
+msgid "No network activity."
+msgstr "无网络活动。"
+
+#: ui/main.qml
+msgid "%1 — down %2, up %3"
+msgstr "%1 — 下行 %2，上行 %3"

@@ -27,20 +27,13 @@ Item {
         return max;
     }
 
-    /// The trace is scaled to the tallest sample in its window, so the whole
-    /// curve jumps whenever that sample enters or leaves. Easing the scale
-    /// turns those jumps into a stretch.
-    property real smoothPeak: peak
+    readonly property bool drawable: count >= 2 && peak > 0
 
-    Behavior on smoothPeak {
-        NumberAnimation {
-            duration: Kirigami.Units.longDuration
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    readonly property bool drawable: count >= 2 && smoothPeak > 0
-
+    // The trace is scaled to the tallest sample in its window and redrawn as
+    // it is. Easing that scale would smooth the jump when a peak leaves the
+    // window, but only by drawing the samples against a peak that is not the
+    // real one for the length of the animation — a monitor should not show a
+    // briefly wrong graph to look calmer.
     readonly property var linePoints: {
         if (!drawable) {
             return [];
@@ -48,8 +41,7 @@ Item {
         const points = [];
         const step = width / (count - 1);
         for (let i = 0; i < count; ++i) {
-            const scaled = Math.min(1, values[i] / smoothPeak);
-            points.push(Qt.point(i * step, height - scaled * height));
+            points.push(Qt.point(i * step, height - (values[i] / peak) * height));
         }
         return points;
     }

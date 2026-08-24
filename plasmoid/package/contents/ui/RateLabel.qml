@@ -18,22 +18,14 @@ PlasmaComponents.Label {
 
     readonly property real dimAt: 1 // bytes/s below which the reading is idle
 
-    /// The rendered figure, which chases `value` instead of jumping to it.
-    /// Snapshots land once a second; without this the readings tick like a
-    /// stopwatch while everything around them slides.
-    property real displayValue: value
-
-    Behavior on displayValue {
-        NumberAnimation {
-            duration: Kirigami.Units.longDuration
-            easing.type: Easing.OutCubic
-        }
-    }
-
     Layout.preferredWidth: metrics.width
     horizontalAlignment: Text.AlignRight
 
-    text: (down ? "↓ " : "↑ ") + Rates.format(displayValue, binaryUnits)
+    // The figure is not eased toward its new value. Tweening it would set a
+    // number running for as long as a row takes to slide, so every rank change
+    // would come with its readings racing — the movement is meant to be in the
+    // list, not in the measurements.
+    text: (down ? "↓ " : "↑ ") + Rates.format(value, binaryUnits)
     font: small ? Kirigami.Theme.smallFont : Kirigami.Theme.defaultFont
     opacity: value < dimAt ? 0.4 : 1
     textFormat: Text.PlainText
