@@ -11,6 +11,7 @@ KCM.SimpleKCM {
     property alias cfg_widgetTitle: titleField.text
     property alias cfg_showTitle: titleBox.checked
     property alias cfg_refreshInterval: intervalBox.value
+    property alias cfg_historySeconds: historyBox.value
     property alias cfg_lingerSeconds: lingerBox.value
     property alias cfg_topCount: topCountBox.value
     property alias cfg_showTotals: totalsBox.checked
@@ -29,6 +30,7 @@ KCM.SimpleKCM {
     property string cfg_widgetTitleDefault
     property bool cfg_showTitleDefault
     property int cfg_refreshIntervalDefault
+    property int cfg_historySecondsDefault
     property int cfg_lingerSecondsDefault
     property int cfg_topCountDefault
     property bool cfg_showTotalsDefault
@@ -170,6 +172,28 @@ KCM.SimpleKCM {
 
         QQC2.Label {
             text: i18n("Match this to the interval the daemon was started with.")
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
+            wrapMode: Text.WordWrap
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+        }
+
+        QQC2.SpinBox {
+            id: historyBox
+
+            Kirigami.FormData.label: i18n("Rate history covers:")
+            from: 5
+            to: 300
+            stepSize: 5
+            editable: true
+            enabled: sparklineBox.checked
+
+            textFromValue: (value, locale) => i18np("%1 second", "%1 seconds", value)
+            valueFromText: text => parseInt(text.replace(/[^0-9]/g, ""), 10) || 5
+        }
+
+        QQC2.Label {
+            text: i18n("The graphs hold one sample per refresh interval.")
             font: Kirigami.Theme.smallFont
             opacity: 0.7
             wrapMode: Text.WordWrap

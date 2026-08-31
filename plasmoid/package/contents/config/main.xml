@@ -30,6 +30,13 @@
       <default>10</default>
     </entry>
 
+    <!-- How much time a rate history graph covers. The sample count follows
+         from this and the refresh interval, so the graph is only as detailed as
+         the interval allows. -->
+    <entry name="historySeconds" type="Int">
+      <default>30</default>
+    </entry>
+
     <entry name="topCount" type="Int">
       <default>5</default>
     </entry>

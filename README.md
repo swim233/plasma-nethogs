@@ -179,6 +179,7 @@ Configure / Remove menu.
 | Title | *Plasma NetHogs* | Heading shown above the list; can be hidden |
 | Applications to list | 5 | How many rows the list holds |
 | Refresh interval | 1000 ms | Should match the daemon's own interval |
+| Rate history covers | 30 s | How much time a history graph spans, one sample per refresh |
 | Keep idle applications for | 10 s | Grace period before a quiet application fades out |
 | Animations | on | Whether list changes are animated at all |
 | Speed | 1× | Scales the durations on top of the system-wide animation speed |

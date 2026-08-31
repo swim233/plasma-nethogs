@@ -120,6 +120,14 @@ msgid "Match this to the interval the daemon was started with."
 msgstr "应与守护进程启动时所用的间隔保持一致。"
 
 #: ui/config/ConfigGeneral.qml
+msgid "Rate history covers:"
+msgstr "速率历史时长："
+
+#: ui/config/ConfigGeneral.qml
+msgid "The graphs hold one sample per refresh interval."
+msgstr "曲线每个刷新间隔取一个采样点。"
+
+#: ui/config/ConfigGeneral.qml
 msgid "Keep idle applications for:"
 msgstr "闲置应用保留时长："
 

@@ -10,7 +10,15 @@ PlasmoidItem {
 
     /// Sparkline window, in samples. Every window holds exactly this many, so
     /// all of them span the same stretch of time; see pushSample().
-    readonly property int historyLength: 40
+    ///
+    /// One sample arrives per snapshot, so the configured span buys resolution
+    /// or reach depending on the refresh interval, never both. Two samples is
+    /// the least a trace can be drawn from. The upper clamp is only a guard
+    /// against a hand-edited config: the widest span at the shortest interval
+    /// stays under it.
+    readonly property int historyLength: Math.max(2, Math.min(1200,
+        Math.round(Plasmoid.configuration.historySeconds * 1000
+                   / Math.max(1, Plasmoid.configuration.refreshInterval))))
 
     readonly property bool binaryUnits: Plasmoid.configuration.binaryUnits
 
@@ -217,17 +225,24 @@ PlasmoidItem {
     /// empty as its application is observed: every window then covers the same
     /// span of time, samples enter at the right edge and the oldest one falls
     /// off the left. Growing windows are drawn against the same width, so an
-    /// application seen four seconds ago would spread four samples across the
-    /// width its neighbour uses for forty, and its trace would keep contracting
-    /// for the first forty seconds — two rows measured on different time axes.
+    /// application seen four samples ago would spread those four across the
+    /// width its neighbour uses for a full window, and its trace would keep
+    /// contracting until it filled up — two rows on different time axes.
     ///
     /// Every known key is advanced by exactly one sample per snapshot, active
     /// or not, which is what keeps the windows aligned with each other.
+    ///
+    /// Widening the configured span pads on the left and narrowing it drops
+    /// from the left, so a window follows the setting from the next snapshot on
+    /// without the graphs having to start over.
     function pushSample(key, value) {
         const samples = history[key] || new Array(historyLength).fill(0);
         samples.push(value);
         while (samples.length > historyLength) {
             samples.shift();
+        }
+        while (samples.length < historyLength) {
+            samples.unshift(0);
         }
         history[key] = samples;
         return samples;
@@ -238,8 +253,8 @@ PlasmoidItem {
     /// The two array-valued fields travel as JSON text. A ListModel turns an
     /// assigned array into a nested ListModel, which the delegate cannot read
     /// back as an array — and switching the model to dynamicRoles does not
-    /// help. Encoding forty numbers and a handful of pid records once a second
-    /// costs nothing and keeps the roles statically typed.
+    /// help. Encoding a window's worth of numbers and a handful of pid records
+    /// once a second costs nothing and keeps the roles statically typed.
     function rowFor(app, idle) {
         return {
             key: app.key,
