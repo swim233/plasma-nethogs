@@ -8,7 +8,8 @@ import "Rates.js" as Rates
 PlasmoidItem {
     id: root
 
-    /// Sparkline window, in samples.
+    /// Sparkline window, in samples. Every window holds exactly this many, so
+    /// all of them span the same stretch of time; see pushSample().
     readonly property int historyLength: 40
 
     readonly property bool binaryUnits: Plasmoid.configuration.binaryUnits
@@ -113,8 +114,11 @@ PlasmoidItem {
         }
     }
 
-    // Lingering rows would otherwise outlive a change to the setting that
-    // created them.
+    // Data collected under a setting's old value does not survive changing it:
+    // lingering rows would otherwise outlive the grace period that created
+    // them, and a sparkline window would end up holding samples taken one
+    // second apart next to samples taken five seconds apart, on an axis that
+    // claims they are evenly spaced.
     Connections {
         target: Plasmoid.configuration
 
@@ -124,6 +128,10 @@ PlasmoidItem {
 
         function onExcludeProcessesChanged() {
             root.lingering = {};
+        }
+
+        function onRefreshIntervalChanged() {
+            root.history = {};
         }
     }
 
@@ -163,13 +171,7 @@ PlasmoidItem {
         for (const app of active) {
             isActive[app.key] = true;
             lingering[app.key] = { row: app, lastActive: now };
-
-            const samples = history[app.key] || [];
-            samples.push(app.rx + app.tx);
-            while (samples.length > historyLength) {
-                samples.shift();
-            }
-            history[app.key] = samples;
+            pushSample(app.key, app.rx + app.tx);
         }
 
         // An app that goes quiet keeps its history — padded with zeroes — so
@@ -179,12 +181,7 @@ PlasmoidItem {
             if (isActive[key]) {
                 continue;
             }
-            const samples = history[key];
-            samples.push(0);
-            while (samples.length > historyLength) {
-                samples.shift();
-            }
-            if (Rates.peak(samples) === 0) {
+            if (Rates.peak(pushSample(key, 0)) === 0) {
                 delete history[key];
             }
         }
@@ -212,6 +209,28 @@ PlasmoidItem {
 
         syncModel(rows);
         topApp = active.length > 0 ? rowFor(active[0], false) : null;
+    }
+
+    /// Appends one reading to an application's sparkline window and returns it.
+    ///
+    /// A window is created full length, zero filled, rather than growing from
+    /// empty as its application is observed: every window then covers the same
+    /// span of time, samples enter at the right edge and the oldest one falls
+    /// off the left. Growing windows are drawn against the same width, so an
+    /// application seen four seconds ago would spread four samples across the
+    /// width its neighbour uses for forty, and its trace would keep contracting
+    /// for the first forty seconds — two rows measured on different time axes.
+    ///
+    /// Every known key is advanced by exactly one sample per snapshot, active
+    /// or not, which is what keeps the windows aligned with each other.
+    function pushSample(key, value) {
+        const samples = history[key] || new Array(historyLength).fill(0);
+        samples.push(value);
+        while (samples.length > historyLength) {
+            samples.shift();
+        }
+        history[key] = samples;
+        return samples;
     }
 
     /// One model row.
