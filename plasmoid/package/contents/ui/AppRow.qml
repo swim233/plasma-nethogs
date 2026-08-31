@@ -40,6 +40,13 @@ Item {
 
     property bool expanded: false
 
+    /// A single-process row has nothing to disclose, so it is inert — unless it
+    /// is already open, which happens when an expanded application's extra
+    /// processes exit. Gating on the process count alone would strand the row
+    /// open with no way to close it: the click would stop toggling while the
+    /// breakdown stayed on screen.
+    readonly property bool interactive: pidCount > 1 || expanded
+
     implicitHeight: layout.implicitHeight + Kirigami.Units.smallSpacing * 2
 
     MouseArea {
@@ -48,9 +55,9 @@ Item {
         // Left only: a right click has to reach the applet so Plasma can show
         // its own Configure/Remove menu.
         acceptedButtons: Qt.LeftButton
-        cursorShape: row.pidCount > 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+        cursorShape: row.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
-            if (row.pidCount > 1) {
+            if (row.interactive) {
                 row.expanded = !row.expanded;
             }
         }
@@ -59,7 +66,7 @@ Item {
             anchors.fill: parent
             radius: Kirigami.Units.cornerRadius
             color: Kirigami.Theme.highlightColor
-            opacity: parent.containsMouse && row.pidCount > 1 ? 0.15 : 0
+            opacity: parent.containsMouse && row.interactive ? 0.15 : 0
             Behavior on opacity {
                 enabled: row.animate
                 NumberAnimation {
@@ -128,8 +135,10 @@ Item {
             }
         }
 
-        // Per-pid breakdown. Only worth showing when the row actually merged
-        // several processes.
+        // Per-pid breakdown. Only a row that merged several processes can be
+        // opened, but one that is already open keeps showing the breakdown as
+        // its processes exit, down to the last one, rather than emptying out
+        // from under the pointer.
         ColumnLayout {
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.iconSizes.small + Kirigami.Units.smallSpacing
