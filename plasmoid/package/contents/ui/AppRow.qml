@@ -123,14 +123,14 @@ Item {
             }
 
             RateLabel {
-                down: true
-                value: row.rx
+                down: false
+                value: row.tx
                 binaryUnits: row.binaryUnits
             }
 
             RateLabel {
-                down: false
-                value: row.tx
+                down: true
+                value: row.rx
                 binaryUnits: row.binaryUnits
             }
         }
@@ -165,15 +165,15 @@ Item {
                     }
 
                     RateLabel {
-                        down: true
-                        value: modelData.rx
+                        down: false
+                        value: modelData.tx
                         binaryUnits: row.binaryUnits
                         small: true
                     }
 
                     RateLabel {
-                        down: false
-                        value: modelData.tx
+                        down: true
+                        value: modelData.rx
                         binaryUnits: row.binaryUnits
                         small: true
                     }

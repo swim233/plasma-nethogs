@@ -73,18 +73,18 @@ Item {
 
             PlasmaComponents.Label {
                 Layout.alignment: Qt.AlignRight
-                text: compact.offline ? "↓ —" : "↓ " + Rates.format(compact.rx, main.binaryUnits)
-                font: Kirigami.Theme.smallFont
-                textFormat: Text.PlainText
-                opacity: compact.rx < 1 ? 0.5 : 1
-            }
-
-            PlasmaComponents.Label {
-                Layout.alignment: Qt.AlignRight
                 text: compact.offline ? "↑ —" : "↑ " + Rates.format(compact.tx, main.binaryUnits)
                 font: Kirigami.Theme.smallFont
                 textFormat: Text.PlainText
                 opacity: compact.tx < 1 ? 0.5 : 1
+            }
+
+            PlasmaComponents.Label {
+                Layout.alignment: Qt.AlignRight
+                text: compact.offline ? "↓ —" : "↓ " + Rates.format(compact.rx, main.binaryUnits)
+                font: Kirigami.Theme.smallFont
+                textFormat: Text.PlainText
+                opacity: compact.rx < 1 ? 0.5 : 1
             }
         }
     }

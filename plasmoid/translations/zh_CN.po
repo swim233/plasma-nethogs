@@ -175,5 +175,5 @@ msgid "No network activity."
 msgstr "无网络活动。"
 
 #: ui/main.qml
-msgid "%1 — down %2, up %3"
-msgstr "%1 — 下行 %2，上行 %3"
+msgid "%1 — up %2, down %3"
+msgstr "%1 — 上行 %2，下行 %3"

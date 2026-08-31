@@ -87,15 +87,15 @@ Item {
                 }
 
                 RateLabel {
-                    down: true
-                    value: full.main.totalRx
+                    down: false
+                    value: full.main.totalTx
                     binaryUnits: full.main.binaryUnits
                     visible: Plasmoid.configuration.showTotals
                 }
 
                 RateLabel {
-                    down: false
-                    value: full.main.totalTx
+                    down: true
+                    value: full.main.totalRx
                     binaryUnits: full.main.binaryUnits
                     visible: Plasmoid.configuration.showTotals
                 }

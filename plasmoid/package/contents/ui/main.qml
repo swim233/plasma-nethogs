@@ -82,9 +82,9 @@ PlasmoidItem {
         if (!topApp) {
             return i18n("No network activity.");
         }
-        return i18n("%1 — down %2, up %3", topApp.name,
-                    Rates.format(topApp.rx, binaryUnits),
-                    Rates.format(topApp.tx, binaryUnits));
+        return i18n("%1 — up %2, down %3", topApp.name,
+                    Rates.format(topApp.tx, binaryUnits),
+                    Rates.format(topApp.rx, binaryUnits));
     }
 
     ListModel {
