@@ -11,7 +11,7 @@
 pkgname=plasma-nethogs
 # makepkg rewrites this from pkgver() on every build; the checked-in value is
 # only a starting point.
-pkgver=r9.g185f48e
+pkgver=r15.gb953102.dirty
 pkgrel=1
 pkgdesc="Plasma 6 widget showing which applications are using the network, fed by an eBPF collector"
 arch=('x86_64' 'aarch64')
@@ -28,7 +28,6 @@ depends=(
   # plasmashell, which hosts the applet. No file in the package points at it,
   # so namcap reports it as possibly unneeded; it is not.
   'plasma-workspace'
-  'plasma5support'
   'qt6-base'
   'qt6-declarative'
 )

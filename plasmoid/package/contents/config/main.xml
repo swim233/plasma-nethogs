@@ -16,9 +16,12 @@
       <default>true</default>
     </entry>
 
-    <!-- Should match the interval plasma-nethogsd was started with. Note that XML
-         forbids a double hyphen inside a comment, so plasma-nethogsd's option cannot be
-         spelled out here; see README.md. -->
+    <!-- Shortest spacing between two updates the widget shows. The daemon
+         publishes on its own schedule and the widget is woken by it, so this
+         only ever drops updates and never asks for more: set below the interval
+         the daemon runs at, it leaves every update in place. Note that XML
+         forbids a double hyphen inside a comment, so plasma-nethogsd's matching
+         option cannot be spelled out here; see README.md. -->
     <entry name="refreshInterval" type="Int">
       <default>1000</default>
     </entry>
@@ -31,8 +34,8 @@
     </entry>
 
     <!-- How much time a rate history graph covers. The sample count follows
-         from this and the refresh interval, so the graph is only as detailed as
-         the interval allows. -->
+         from this and the spacing the updates actually arrive at, so the graph
+         is only as detailed as that spacing allows. -->
     <entry name="historySeconds" type="Int">
       <default>30</default>
     </entry>

@@ -19,7 +19,6 @@ depends=(
   # plasmashell, which hosts the applet. No file in the package points at it,
   # so namcap reports it as possibly unneeded; it is not.
   'plasma-workspace'
-  'plasma5support'
   'qt6-base'
   'qt6-declarative'
 )

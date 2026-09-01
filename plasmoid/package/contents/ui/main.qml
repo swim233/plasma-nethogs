@@ -3,6 +3,8 @@ import QtQuick
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 
+import io.github.swim233.nethogs
+
 import "Rates.js" as Rates
 
 PlasmoidItem {
@@ -12,13 +14,22 @@ PlasmoidItem {
     /// all of them span the same stretch of time; see pushSample().
     ///
     /// One sample arrives per snapshot, so the configured span buys resolution
-    /// or reach depending on the refresh interval, never both. Two samples is
-    /// the least a trace can be drawn from. The upper clamp is only a guard
-    /// against a hand-edited config: the widest span at the shortest interval
-    /// stays under it.
+    /// or reach depending on how often those arrive, never both. Two samples is
+    /// the least a trace can be drawn from.
+    ///
+    /// Measured against the spacing the snapshots actually arrive at, not the
+    /// configured refresh interval. The two agree unless the daemon is running
+    /// at an interval the widget was never told about, and it is the real
+    /// spacing that the axis has to claim.
+    ///
+    /// Which is also why the upper clamp can be reached: the daemon goes down to
+    /// 100 ms, and the widest span at that rate asks for 3000 samples per row,
+    /// re-encoded as JSON text on every one of those snapshots. The clamp trades
+    /// the far end of the span for that not happening, so a graph can cover less
+    /// time than the setting says.
     readonly property int historyLength: Math.max(2, Math.min(1200,
         Math.round(Plasmoid.configuration.historySeconds * 1000
-                   / Math.max(1, Plasmoid.configuration.refreshInterval))))
+                   / Math.max(1, source.intervalMs || Plasmoid.configuration.refreshInterval))))
 
     readonly property bool binaryUnits: Plasmoid.configuration.binaryUnits
 
@@ -99,16 +110,27 @@ PlasmoidItem {
         id: appsModel
     }
 
-    StateSource {
+    StateWatcher {
         id: source
 
         path: Plasmoid.configuration.statePath
-        // Each poll forks a process, so match the daemon's rate rather than
-        // oversampling it; a duplicate snapshot is cheaper than a spare fork.
-        pollInterval: Math.max(500, Plasmoid.configuration.refreshInterval)
+        // The daemon publishes on its own schedule and the widget is woken by
+        // it, so this is the shortest spacing the widget passes on rather than a
+        // rate it asks for.
+        coalesceMs: Plasmoid.configuration.refreshInterval
         staleAfterMs: Plasmoid.configuration.refreshInterval * 5
 
-        onUpdated: snapshot => root.ingest(snapshot)
+        // Parsed here rather than handed over already structured, so that the
+        // arrays in it are real JavaScript arrays; see snapshotJson in
+        // plugin/StateWatcher.h.
+        onUpdated: snapshotJson => root.ingest(JSON.parse(snapshotJson))
+
+        // A window may not hold samples taken at one spacing next to samples
+        // taken at another, on an axis that claims they are evenly spaced. This
+        // covers the refresh interval changing and the daemon being restarted
+        // at a different one, and it does not fire when a change to the setting
+        // leaves the real spacing where it was.
+        onIntervalMsChanged: root.history = {}
     }
 
     onDaemonStatusChanged: {
@@ -122,11 +144,10 @@ PlasmoidItem {
         }
     }
 
-    // Data collected under a setting's old value does not survive changing it:
-    // lingering rows would otherwise outlive the grace period that created
-    // them, and a sparkline window would end up holding samples taken one
-    // second apart next to samples taken five seconds apart, on an axis that
-    // claims they are evenly spaced.
+    // Lingering rows collected under the old value of a setting would outlive
+    // the grace period that created them. The sparkline windows have the same
+    // problem and are cleared where the spacing they were sampled at changes,
+    // which is not the same event as the setting changing.
     Connections {
         target: Plasmoid.configuration
 
@@ -136,10 +157,6 @@ PlasmoidItem {
 
         function onExcludeProcessesChanged() {
             root.lingering = {};
-        }
-
-        function onRefreshIntervalChanged() {
-            root.history = {};
         }
     }
 

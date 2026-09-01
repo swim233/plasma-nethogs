@@ -77,7 +77,7 @@ makepkg -si
 
 ### 从源码构建
 
-依赖：Qt 6 Core、KF6（Package）、ECM、Plasma 6 开发文件、libbpf ≥ 1.0、clang 和 `bpftool`。在 Arch 上，`bpftool` 位于 `bpf` 包中：
+依赖：Qt 6 Core 与 Qml、KF6（Package）、ECM、Plasma 6 开发文件、libbpf ≥ 1.0、clang 和 `bpftool`。在 Arch 上，`bpftool` 位于 `bpf` 包中：
 
 ```sh
 sudo pacman -S bpf
@@ -108,8 +108,8 @@ sudo systemctl enable --now plasma-nethogsd
 | --- | --- | --- |
 | 标题 | *Plasma NetHogs* | 列表上方的标题文字；可隐藏 |
 | 列出的应用数 | 5 | 列表容纳的行数 |
-| 刷新间隔 | 1000 ms | 应与守护进程自身的间隔一致 |
-| 速率历史时长 | 30 s | 历史曲线覆盖的时间跨度，每个刷新间隔一个采样点 |
+| 刷新间隔 | 1000 ms | 两次显示更新之间的最小间隔；只会丢弃守护进程的更新，不会索取更多 |
+| 速率历史时长 | 30 s | 历史曲线覆盖的时间跨度，每次更新一个采样点 |
 | 空闲应用保留时间 | 10 s | 安静应用淡出前的宽限期 |
 | 动画 | 开 | 列表变化是否带动画 |
 | 速度 | 1× | 在系统全局动画速度之上缩放动画时长 |
@@ -135,18 +135,23 @@ QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input plasmoid/autotes
 
 ### 迭代小部件
 
-plasmoid 可以单独安装且无需 root，迭代速度快得多：
+plasmoid 的 QML 部分可以单独安装且无需 root，迭代速度快得多。它还带一个编译型
+类型，该类型不在包内，因此要让 QML 引擎到构建目录里找它：
 
 ```sh
 kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
-plasmoidviewer -a io.github.swim233.plasma-nethogs
+QML_IMPORT_PATH=build/bin plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
 
 QML 警告默认进入 journal，除非另行指定：
 
 ```sh
-QT_ASSUME_STDERR_HAS_CONSOLE=1 plasmoidviewer -a io.github.swim233.plasma-nethogs
+QT_ASSUME_STDERR_HAS_CONSOLE=1 QML_IMPORT_PATH=build/bin \
+  plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
+
+要在 plasmashell 里（而非独立窗口中）测试小部件，需要执行
+`sudo cmake --install build`：plasmashell 从系统 QML 导入路径解析这个编译型类型。
 
 ## 权限
 
@@ -161,11 +166,13 @@ unit 还设置了 `ProtectSystem=strict`、`ProtectHome=yes`、`NoNewPrivileges=
 
 ## 为什么小部件读文件
 
-Plasma 6 没有提供 D-Bus 或本地套接字的 QML 绑定，而 Qt 拒绝在未设置 `QML_XHR_ALLOW_FILE_READ=1` 时用 `XMLHttpRequest` 读取 `file://`——该变量需要在整个会话范围内设置，等于为用户运行的每个 QML 应用解除限制。因此小部件使用 `executable` 数据引擎，每次轮询付出一次 `cat` 的开销。
+Plasma 6 没有提供 D-Bus 或本地套接字的 QML 绑定，而 Qt 拒绝在未设置 `QML_XHR_ALLOW_FILE_READ=1` 时用 `XMLHttpRequest` 读取 `file://`——该变量需要在整个会话范围内设置，等于为用户运行的每个 QML 应用解除限制。
 
 守护进程用 `QSaveFile` 写入（临时文件加 rename），读方永远不会看到写了一半的文档；每份快照还带一个单调递增的 `seq`，小部件用它跳过重复内容。
 
-如果将来这成为问题，升级路径是编写一个直接监视文件的编译型 QML 插件。它只需替换 `contents/ui/StateSource.qml`——该文件是唯一与传输方式耦合的文件。
+小部件用一个编译型 QML 类型 `StateWatcher` 读取它，由守护进程的写入唤醒。这也是 plasmoid 并非纯 QML、无法单独安装的原因。
+
+纯 QML 剩下的选项是 Plasma 的 `executable` 数据引擎，每次轮询跑一个 `cat`——小部件此前就是这么做的。开销从来不在 `cat`：数据引擎在 `plasmashell` 内部 fork 它，而 fork 一个这么大的进程会让内核在持有 `mmap_lock` 写锁的同时复制它的页表。在常驻 1 GB 的 `plasmashell` 上实测，一次 fork 让它停顿 11–17 ms；由于该锁是进程级的，停顿落在每个触碰新内存的线程上，而不只是发起 fork 的那个。一个监测系统的小部件，不该成为系统抖动里可测量的一部分。
 
 ## 快照格式
 

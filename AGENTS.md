@@ -1,14 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 A KDE Plasma 6 widget showing which applications are using the network, fed by
 an eBPF collector. Two independent halves: `plasma-nethogsd`, a privileged C++/QtCore
 daemon, and a QML plasmoid. They are coupled only by a JSON snapshot file.
-
-The plasmoid is not pure QML: it carries one compiled type, `StateWatcher`,
-which is how it reads that file. See the trap about `file://` below for why, and
-`plasmoid/plugin/StateWatcher.h` for what the alternative cost.
 
 `README.md` documents the measurement boundaries and the user-facing settings;
 this file covers building on it.
@@ -39,32 +35,20 @@ root.
 sudo ./build/bin/plasma-nethogsd --verbose --interval 1000 --out /tmp/state.json
 ```
 
-**Plasmoid** — install the package to `~/.local` (no root) and view it
-standalone. The compiled type is not part of the package, so point the QML
-engine at the build tree for it:
+**Plasmoid** — install to `~/.local` (no root) and view it standalone:
 
 ```sh
 kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
-QML_IMPORT_PATH=build/bin plasmoidviewer -a io.github.swim233.plasma-nethogs
+plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
-
-That environment variable is per-invocation on a command run by hand, unlike the
-session-wide one the widget refuses to depend on (see the `file://` trap).
 
 A `~/.local` copy shadows the `/usr` one, and `plasmashell` caches QML — changes
 to an already-placed widget need `systemctl --user restart plasma-plasmashell`.
 Check for two installed copies before concluding a change did not take effect.
 
-Testing an already-placed widget still needs `sudo cmake --install build`,
-because plasmashell resolves the compiled type from the system QML import path
-and nothing puts a `~/.local` build there.
-
 ## Checks
 
 ```sh
-# the snapshot reader, including the watch and staleness behaviour
-ctest --test-dir build --output-on-failure
-
 # QML syntax
 qmllint -I /usr/lib/qt6/qml plasmoid/package/contents/ui/*.qml
 
@@ -73,18 +57,6 @@ QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input plasmoid/autotes
 
 # the kcfg schema must stay well-formed; a broken one fails silently
 xmllint --noout plasmoid/package/contents/config/main.xml
-
-# the QML module must load from an installed tree, not just from build/bin. The
-# plugin has the backing library as a NEEDED entry and finds it through a runpath
-# into LIBDIR, so installing only one of the two builds, tests and runs fine from
-# the build directory and then fails on a user's machine with nothing but a
-# "module is not installed" from the QML engine.
-DESTDIR=/tmp/stage cmake --install build
-printf 'import QtQml\nimport io.github.swim233.nethogs\nStateWatcher { Component.onCompleted: Qt.exit(0) }\n' \
-  > /tmp/probe.qml
-QT_ASSUME_STDERR_HAS_CONSOLE=1 QML_IMPORT_PATH=/tmp/stage/usr/lib/qt6/qml \
-  LD_LIBRARY_PATH=/tmp/stage/usr/lib \
-  /usr/lib/qt6/bin/qml -a core /tmp/probe.qml
 
 # rebuild translation catalogues after editing a .po
 ./plasmoid/translations/build.sh
@@ -98,7 +70,7 @@ eBPF ─ fexit probes accumulate per-tgid counters in an LRU hash
 plasma-nethogsd ─ diffs the counters, resolves /proc identity, groups by application,
   │    writes /run/plasma-nethogsd/state.json atomically once a second
   │
-plasmoid ─ woken by the write, applies exclusions and the linger window,
+plasmoid ─ reads the snapshot, applies exclusions and the linger window,
            reconciles a ListModel so each change animates
 ```
 
@@ -120,17 +92,8 @@ interpreters, where the executable would merge unrelated programs.
 itself to the two representations explicitly — Plasma does not inject a root
 reference, and a representation in its own file cannot see ids from `main.qml`.
 `ingest()` applies exclusions, maintains the sparkline history and the linger
-map, then `syncModel()` reconciles the `ListModel` in place.
-
-`plasmoid/plugin/StateWatcher.{h,cpp}` is the only code coupled to the
-transport. It watches for the daemon's writes, gates each one on version, `seq`
-and staleness, and hands `main.qml` the document as text to `JSON.parse` — text
-rather than a `QVariantMap`, so the arrays in it are real JavaScript arrays; the
-header says why that matters. `refreshInterval` no longer paces anything: the
-daemon publishes on its own schedule and the setting only drops updates, by
-whole publications, so the samples in a sparkline window stay evenly spaced.
-`intervalMs` reports the spacing that results, and the window length and the
-time axis are computed from it rather than from the setting.
+map, then `syncModel()` reconciles the `ListModel` in place. `StateSource.qml`
+is the only file coupled to the transport.
 
 ## Traps
 
@@ -159,33 +122,14 @@ returns `undefined` and the widget quietly falls back to its QML-side defaults.
 Run `xmllint` after editing it.
 
 **`file://` XMLHttpRequest does not work in QML.** Qt refuses local-file reads
-unless `QML_XHR_ALLOW_FILE_READ=1` is set, which would have to be session-wide,
-and Plasma ships no QML bindings for D-Bus or local sockets either. What pure
-QML leaves is Plasma's `executable` data engine running `cat` once per poll,
-which is what this widget did until `StateWatcher` replaced it. The cost was
-never the `cat`: the engine forks it from inside plasmashell, and forking a
-process that large makes the kernel copy its page tables under `mmap_lock` held
-for write — measured at 11–17 ms per fork against a 1 GB plasmashell, on every
-thread that touches new memory, not just the one that forked. This is why the
-widget is not pure QML, and why it may not go back to being so.
-
-**An inotify watch on the snapshot file stops reporting after one update.** The
-daemon publishes with `QSaveFile`, so each update is a rename over the old
-inode; the watch follows the replaced inode, fires once, and `QFileSystemWatcher`
-then drops the path without saying so. `StateWatcher::rearm()` watches the
-*directory* and re-adds the file after every event. Re-adding alone very nearly
-works, which is the trap: it fails only when the file does not exist yet, and
-when an update lands between the drop and the re-add. `noticesEveryRepublication`
-and `reportsAMissingSnapshotAndRecovers` in `tst_statewatcher.cpp` both use
-timeouts well under the 2 s recovery timer, so a lost watch cannot pass by
-falling back on it.
+unless `QML_XHR_ALLOW_FILE_READ=1` is set, which would have to be session-wide.
+Hence the `executable` data engine in `StateSource.qml`, at the cost of one
+`cat` per poll. A compiled QML plugin is the upgrade path if that ever matters;
+it would replace that one file.
 
 **A `ListModel` cannot round-trip a JS array** — it converts one into a nested
 `ListModel` with `count` instead of `length`, and `dynamicRoles` does not help.
-The pid list and sparkline samples travel as JSON text; see `rowFor()`. Related:
-a `QVariantList` handed from C++ to QML has a `length`, an iterator, a `map()`
-and a `JSON.stringify()` that all behave, but `Array.isArray()` on it is false —
-which is why `StateWatcher` publishes text instead of a `QVariantMap`.
+The pid list and sparkline samples travel as JSON text; see `rowFor()`.
 
 **Qt logging goes to the journal**, not to a redirected stderr. Prefix with
 `QT_ASSUME_STDERR_HAS_CONSOLE=1` or nothing is captured. `/usr/bin/qml` is Qt 5

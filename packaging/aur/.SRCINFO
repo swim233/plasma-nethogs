@@ -22,7 +22,6 @@ pkgbase = plasma-nethogs-git
 	depends = libplasma
 	depends = libstdc++
 	depends = plasma-workspace
-	depends = plasma5support
 	depends = qt6-base
 	depends = qt6-declarative
 	provides = plasma-nethogs

@@ -142,8 +142,8 @@ not tied to the kernel that built it.
 
 ### From source
 
-Requires: Qt 6 Core, KF6 (Package), ECM, Plasma 6 development files, libbpf ≥
-1.0, clang, and `bpftool`. On Arch, `bpftool` is in the `bpf` package:
+Requires: Qt 6 Core and Qml, KF6 (Package), ECM, Plasma 6 development files,
+libbpf ≥ 1.0, clang, and `bpftool`. On Arch, `bpftool` is in the `bpf` package:
 
 ```sh
 sudo pacman -S bpf
@@ -178,8 +178,8 @@ Configure / Remove menu.
 | --- | --- | --- |
 | Title | *Plasma NetHogs* | Heading shown above the list; can be hidden |
 | Applications to list | 5 | How many rows the list holds |
-| Refresh interval | 1000 ms | Should match the daemon's own interval |
-| Rate history covers | 30 s | How much time a history graph spans, one sample per refresh |
+| Refresh interval | 1000 ms | Shortest gap between shown updates; only ever drops the daemon's, never asks for more |
+| Rate history covers | 30 s | How much time a history graph spans, one sample per update |
 | Keep idle applications for | 10 s | Grace period before a quiet application fades out |
 | Animations | on | Whether list changes are animated at all |
 | Speed | 1× | Scales the durations on top of the system-wide animation speed |
@@ -220,19 +220,25 @@ Anything new that spans the applet area should be checked against it first.
 
 ### Iterating on the widget
 
-The plasmoid alone can be installed without root, which is much faster to work
-with:
+The plasmoid's QML can be installed without root, which is much faster to work
+with. It also carries one compiled type, which is not part of the package, so
+point the QML engine at the build tree for it:
 
 ```sh
 kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
-plasmoidviewer -a io.github.swim233.plasma-nethogs
+QML_IMPORT_PATH=build/bin plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
 
 QML warnings are routed to the journal unless you ask otherwise:
 
 ```sh
-QT_ASSUME_STDERR_HAS_CONSOLE=1 plasmoidviewer -a io.github.swim233.plasma-nethogs
+QT_ASSUME_STDERR_HAS_CONSOLE=1 QML_IMPORT_PATH=build/bin \
+  plasmoidviewer -a io.github.swim233.plasma-nethogs
 ```
+
+Testing the widget inside plasmashell rather than standalone needs
+`sudo cmake --install build`: plasmashell resolves the compiled type from the
+system QML import path.
 
 ## Privileges
 
@@ -255,16 +261,24 @@ to.
 Plasma 6 ships no QML bindings for D-Bus or local sockets, and Qt refuses
 `file://` reads from `XMLHttpRequest` unless `QML_XHR_ALLOW_FILE_READ=1` is set
 — which would have to be set session-wide, lifting the restriction for every
-QML application the user runs. So the widget uses the `executable` data engine
-and pays one `cat` per poll.
+QML application the user runs.
 
-The daemon writes with `QSaveFile` (temporary file plus rename), so a reader
-can never see a half-written document, and each snapshot carries a monotonic
-`seq` the widget uses to skip repeats.
+The daemon writes with `QSaveFile` (temporary file plus rename), so a reader can
+never see a half-written document, and each snapshot carries a monotonic `seq`
+the widget uses to skip repeats.
 
-If that ever becomes a problem, the upgrade path is a compiled QML plugin that
-watches the file directly. It would replace `contents/ui/StateSource.qml` and
-nothing else — that file is the only one coupled to the transport.
+The widget reads it with a compiled QML type, `StateWatcher`, which watches for
+the daemon's writes and is woken by them. This is the reason the plasmoid is not
+pure QML and cannot be installed on its own.
+
+What pure QML leaves instead is Plasma's `executable` data engine running `cat`
+once per poll, which is what the widget used to do. The expensive part was never
+the `cat`: the engine forks it from inside `plasmashell`, and
+forking a process that large makes the kernel copy its page tables while holding
+`mmap_lock` for write. Measured against a `plasmashell` with 1 GB resident, one
+fork stalled it for 11–17 ms, and because the lock is per-process the stall lands
+on every thread that touches new memory rather than only the one that forked. A
+widget that reports on the system should not be a measurable part of its jitter.
 
 ## Snapshot format
 

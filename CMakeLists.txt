@@ -12,9 +12,14 @@ include(KDEInstallDirs)
 include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMDeprecationSettings)
+include(ECMQmlModule)
+include(ECMAddTests)
 include(FeatureSummary)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core)
+# Qml is for the widget's snapshot reader, which is a compiled QML type because
+# QML cannot read a local file without either a session-wide environment
+# variable or a forked process; see plasmoid/plugin/StateWatcher.h.
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Qml)
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Package)
 find_package(Plasma REQUIRED)
 
