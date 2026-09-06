@@ -1,128 +1,68 @@
-# plasma-nethogs
-[简体中文](README.zh-CN.md)
+<div align="center">
 
-<img width="513" height="321" alt="image" src="https://github.com/user-attachments/assets/8f9ff162-40d5-4bad-91e7-68f9561713d6" />
+# 📊 Plasma NetHogs
 
+**原生 Plasma 6 网络占用部件 —— 由 eBPF 采集器支撑,显示哪些应用正在使用网络**
 
-A KDE Plasma 6 widget that shows which applications are using the network right
-now, backed by an eBPF collector.
+[![Release](https://img.shields.io/github/v/release/swim233/plasma-nethogs?include_prereleases&style=flat-square&logo=github&color=1D99F3)](https://github.com/swim233/plasma-nethogs/releases)
+[![AUR](https://img.shields.io/aur/version/plasma-nethogs-git?style=flat-square&logo=archlinux&logoColor=white&label=AUR)](https://aur.archlinux.org/packages/plasma-nethogs-git)
+[![License](https://img.shields.io/github/license/swim233/plasma-nethogs?style=flat-square&color=blue)](https://github.com/swim233/plasma-nethogs/blob/main/LICENSE)
 
+[![Plasma](https://img.shields.io/badge/KDE_Plasma-6-1D99F3?style=flat-square&logo=kde&logoColor=white)](https://kde.org/plasma-desktop/)
+[![Qt](https://img.shields.io/badge/Qt-6.6+-41CD52?style=flat-square&logo=qt&logoColor=white)](https://www.qt.io/)
+[![eBPF](https://img.shields.io/badge/eBPF-CO--RE-8A2BE2?style=flat-square&logo=ebpf&logoColor=white)](https://ebpf.io/)
 
-Linux has no kernel interface for per-process network byte counts:
-`/proc/<pid>/net/*` is per network namespace, not per process, and
-`/proc/<pid>/io` only covers disk. Plasma's own `ksystemstats` network plugin
-exposes interface-level sensors only, and the process table in
-`plasma-systemmonitor` has no network column. So answering "what is eating my
-bandwidth?" on a Plasma desktop currently means opening a terminal and running
-`nethogs`. This fills that gap.
+<img width="513" height="321" alt="部件截图" src="https://github.com/user-attachments/assets/8f9ff162-40d5-4bad-91e7-68f9561713d6" />
+
+[English](README.en.md) · [更新日志](CHANGELOG.md) · [报告问题](https://github.com/swim233/plasma-nethogs/issues)
+
+</div>
+
+---
+
+Linux 没有按进程统计网络字节数的内核接口:`/proc/<pid>/net/*` 是按网络命名空间而非进程划分的,而 `/proc/<pid>/io` 只覆盖磁盘。Plasma 自带的 `ksystemstats` 网络插件只暴露接口级传感器,`plasma-systemmonitor` 的进程表也没有网络列。因此,在 Plasma 桌面上回答「到底是什么在吃我的带宽?」目前只能打开终端运行 `nethogs`。这个项目就是为了填补这个空白。
 
 ```
-┌─ eBPF ─────────────────────────────────────────────┐
-│ fexit/tcp_sendmsg    ┐                             │
-│ fexit/udp_sendmsg    ├→ tx += bytes                │
-│ fexit/udpv6_sendmsg  ┘                             │
-│ fexit/sock_recvmsg    → rx += bytes                │
-│ LRU_HASH<tgid, {rx, tx, comm}>                     │
-└────────────────────┬───────────────────────────────┘
-                     │ read once per second
-┌────────────────────▼───────────────────────────────┐
-│ plasma-nethogsd — privileged daemon (C++/QtCore + libbpf)     │
-│ diffs counters, resolves /proc identity, groups by │
-│ application, writes /run/plasma-nethogsd/state.json atomically│
-└────────────────────┬───────────────────────────────┘
-                     │
-┌────────────────────▼───────────────────────────────┐
-│ plasmoid — QML, reads the snapshot once per second │
-└────────────────────────────────────────────────────┘
+┌─ eBPF ───────────────────────────────────────────────────┐
+│ fexit/tcp_sendmsg    ┐                                   │
+│ fexit/udp_sendmsg    ├→ tx += 字节数                     │
+│ fexit/udpv6_sendmsg  ┘                                   │
+│ fexit/sock_recvmsg    → rx += 字节数                     │
+│ LRU_HASH<tgid, {rx, tx, comm}>                           │
+└──────────────────────┬───────────────────────────────────┘
+                       │ 每秒读取一次
+┌──────────────────────▼───────────────────────────────────┐
+│ plasma-nethogsd —— 特权守护进程(C++/QtCore + libbpf)     │
+│ 差分计数器,解析 /proc 身份,按应用分组,                   │
+│ 原子写入 /run/plasma-nethogsd/state.json                 │
+└──────────────────────┬───────────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────────┐
+│ plasmoid —— QML,每秒读取一次快照                         │
+└──────────────────────────────────────────────────────────┘
 ```
 
-## What it measures, and what it does not
+## ✨ 功能特性
 
-This is a "who is using the bandwidth" tool, not a traffic accounting tool.
+- 📈 **逐应用速率排行** —— 上下行速率实时排序,每行带历史曲线,展开可查看并入的各个 pid
+- 🧩 **按应用合并** —— 以可执行文件路径分组,浏览器的多个进程合并为一行;通用解释器改用 cgroup 身份
+- 🎨 **图标与名称** —— 取自匹配桌面 id 的系统 `.desktop` 文件,不靠进程名猜测
+- 💤 **空闲保留** —— 停止传输的应用保留原位、变暗显示为零,宽限期结束后才淡出,活跃应用始终优先占位
+- 🚫 **排除进程** —— 排除项同时从总量中扣除,配置页提供常见代理名称的一键建议
+- 🎞️ **动画可调** —— 列表增删、换位、位移均有动画,可整体开关,速度在系统全局动画速度之上缩放
+- 🖥️ **面板紧凑条目** —— 可配置显示最繁忙应用或总速率
+- 🔒 **最小权限** —— 守护进程仅带三项 capability,配合 `ProtectSystem=strict` 等沙箱设置
+- 🌐 **简体中文界面** —— 部件界面自带 zh_CN 翻译
 
-**Counted:** processes belonging to every user, TCP and UDP (so QUIC too), IPv4
-and IPv6, all traffic that passes through a socket.
+## 📦 安装
 
-**Not counted, or skewed:**
-
-1. **Application-layer bytes only.** The hooks sit at the socket layer, so the
-   figure is what the application handed to, or took from, the kernel. Against
-   an application's own byte tally it is exact: a 37 GB local transfer was
-   accounted to within 3 bytes, the rounding of per-second rates to integers.
-   Against an interface counter it will always read low, since IP/TCP headers,
-   retransmissions and TLS record overhead are not included — so it will never
-   match `ip -s link`, and on a machine whose traffic crosses a local proxy it
-   is not directly comparable at all.
-2. **`splice()` from a socket bypasses `sock_recvmsg`** and is missed on the
-   receive side. The send side is fine: modern kernels route `sendfile()`
-   through `sendmsg` with `MSG_SPLICE_PAGES`, which reaches `tcp_sendmsg`.
-3. **Loopback is excluded** by destination address (`127.0.0.0/8`, `::1`,
-   `::ffff:127.0.0.0/8`). Without this a local development server would sit at
-   the top of the list permanently.
-4. **A TUN-mode proxy doubles every byte.** With clash/mihomo/sing-box in TUN
-   mode the path is `application → tun → proxy → NIC`, and both halves are real
-   socket traffic, so the total reads about 2× the truth. There is no way to
-   tell the two apart at the socket layer. Use *Exclude processes* in the
-   widget's settings; the configuration page offers the usual proxy names as
-   one-click suggestions.
-5. **Virtual machines** appear as a single `qemu-system-*` row. Processes
-   inside the guest are not visible, which is correct.
-6. **Containers** are attributed correctly — the daemon sees host pids — but
-   the displayed name is the container's own `comm`, and cgroup grouping falls
-   under `docker-*` / `libpod-*`.
-7. **Kernel-side traffic** (NFS client, kTLS, iSCSI) and **forwarded traffic**
-   (routing/NAT, which never touches a local socket) have no owning process and
-   are not shown.
-8. **A process that exits loses its row.** Its bytes are still counted for the
-   tick in which it died; the BPF map stores `comm` alongside the counters so
-   the name survives even when `/proc/<pid>` is already gone.
-
-## Why the hooks are asymmetric
-
-Receive is one hook: `sock_recvmsg()` is the single entry point every socket
-read funnels through, so it covers TCP, UDP, QUIC, IPv4 and IPv6 at once, and
-its return value is the byte count copied to userspace.
-
-Send cannot mirror that. Since Linux 6.7 the syscall path calls a static
-`__sock_sendmsg()`, which the compiler inlines away; the exported
-`sock_sendmsg()` remains only for in-kernel callers. A probe on it attaches
-successfully and then reports almost nothing — an easy trap, because the
-receive direction keeps working and the numbers look merely low rather than
-broken. The transport handlers (`tcp_sendmsg`, `udp_sendmsg`,
-`udpv6_sendmsg`) are reached through `sk->sk_prot->sendmsg`, an indirect call
-that cannot be inlined, so they are stable attach points. `tcp_sendmsg` serves
-both address families; UDP needs one hook per family, and the IPv6 one is
-optional at attach time for kernels built without IPv6.
-
-## How applications are grouped
-
-The executable path is the primary key, because it is what actually merges a
-browser's processes. systemd splits Chrome across two cgroups — the browser
-process lands in `app-com.google.Chrome-<pid>.scope` while its children go to
-`app-google\x2dchrome@<hash>.service` — but all of them share
-`/opt/google/chrome/chrome`.
-
-For generic interpreters (`python*`, `node`, `java`, `electron*`, shells, …)
-that would merge unrelated programs, the systemd cgroup identity is used
-instead, then `comm` as a last resort. Expanding a row shows the individual
-pids that were merged into it.
-
-The icon comes from `Icon=` in the system-wide `.desktop` file matching the
-cgroup's desktop id — guessing from the process name is not good enough, since
-Chrome's desktop id is `com.google.Chrome`, its binary is `chrome`, and its
-icon is `google-chrome`. Applications installed under `~/.local/share`
-fall back to a generic icon: the unit sets `ProtectHome=yes`, and a root daemon
-has no business reading home directories to render an icon.
-
-## Building and installing
-
-### On Arch, from the AUR
+### Arch Linux(AUR,推荐)
 
 ```sh
-paru -S plasma-nethogs-git      # or yay, or any other helper
+paru -S plasma-nethogs-git      # 或 yay,或其他任何 AUR 助手
 ```
 
-Or without a helper:
+或者不用助手:
 
 ```sh
 git clone https://aur.archlinux.org/plasma-nethogs-git.git
@@ -130,26 +70,17 @@ cd plasma-nethogs-git
 makepkg -si
 ```
 
-It is a `-git` package because there is no tagged release yet: `pkgver()`
-resolves to the commit it was built from, so upgrading means rebuilding against
-whatever `main` holds at the time.
+它是 `-git` 包,因为目前还没有打标签的发布版本:`pkgver()` 解析为构建时对应的提交,因此升级意味着针对 `main` 当前内容重新构建。
 
-The build reads `/sys/kernel/btf/vmlinux` to generate `vmlinux.h`, so the
-*building* machine needs `CONFIG_DEBUG_INFO_BTF=y` — Arch's own kernels have it,
-and a `devtools` chroot works because those mount `/sys`. CO-RE resolves the
-relocations against the running kernel at load time, so the resulting package is
-not tied to the kernel that built it.
+### 从源码构建
 
-### From source
-
-Requires: Qt 6 Core and Qml, KF6 (Package), ECM, Plasma 6 development files,
-libbpf ≥ 1.0, clang, and `bpftool`. On Arch, `bpftool` is in the `bpf` package:
+依赖:Qt 6 Core 与 Qml、KF6(Package)、ECM、Plasma 6 开发文件、libbpf ≥ 1.0、clang 和 `bpftool`。在 Arch 上,`bpftool` 位于 `bpf` 包中:
 
 ```sh
 sudo pacman -S bpf
 ```
 
-Then:
+然后:
 
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
@@ -158,131 +89,81 @@ sudo cmake --install build
 sudo systemctl daemon-reload
 ```
 
-`packaging/` holds both PKGBUILDs, and `packaging/arch` builds the checkout it
-sits in rather than fetching a source — `cd packaging/arch && makepkg -si` gives
-a package pacman tracks, which is a good deal easier to take back out again than
-a bare `cmake --install`.
+`packaging/` 存放两个 PKGBUILD,`packaging/arch` 构建的是它所在的检出目录而非拉取源码——`cd packaging/arch && makepkg -si` 会得到一个由 pacman 跟踪的包,相比裸 `cmake --install` 更容易卸载干净。
 
-### First run
+> [!NOTE]
+> 构建会读取 `/sys/kernel/btf/vmlinux` 来生成 `vmlinux.h`,所以**构建**机器需要 `CONFIG_DEBUG_INFO_BTF=y`——Arch 自带内核满足此条件,`devtools` chroot 也可以(它们会挂载 `/sys`)。CO-RE 在加载时针对运行中的内核解析重定位,因此产出的包并不绑定构建它的内核。
+
+### 首次运行
 
 ```sh
 sudo systemctl enable --now plasma-nethogsd
 ```
 
-Add *Plasma NetHogs* to a panel or the desktop. Right-click it for the usual
-Configure / Remove menu.
+右键桌面或面板 →「添加部件」→ 找到 **「Plasma NetHogs」** 拖入即可。右键部件可打开常规的 配置 / 移除 菜单。
 
-### Settings
+## ⚙️ 设置
 
-| Setting | Default | Meaning |
+| 设置项 | 默认值 | 含义 |
 | --- | --- | --- |
-| Title | *Plasma NetHogs* | Heading shown above the list; can be hidden |
-| Applications to list | 5 | How many rows the list holds |
-| Refresh interval | 1000 ms | Shortest gap between shown updates; only ever drops the daemon's, never asks for more |
-| Rate history covers | 30 s | How much time a history graph spans, one sample per update |
-| Keep idle applications for | 10 s | Grace period before a quiet application fades out |
-| Animations | on | Whether list changes are animated at all |
-| Speed | 1× | Scales the durations on top of the system-wide animation speed |
-| Exclude processes | empty | Names to leave out, and to subtract from the totals |
-| Panel entry shows | busiest application | What the compact panel entry displays |
-| Snapshot file | `/run/plasma-nethogsd/state.json` | Where to read the daemon's output |
+| 标题 | *Plasma NetHogs* | 列表上方的标题文字;可隐藏 |
+| 列出的应用数 | 5 | 列表容纳的行数 |
+| 刷新间隔 | 1000 ms | 两次显示更新之间的最小间隔;只会丢弃守护进程的更新,不会索取更多 |
+| 速率历史时长 | 30 s | 历史曲线覆盖的时间跨度,每次更新一个采样点 |
+| 空闲应用保留时间 | 10 s | 安静应用淡出前的宽限期 |
+| 动画 | 开 | 列表变化是否带动画 |
+| 速度 | 1× | 在系统全局动画速度之上缩放动画时长 |
+| 排除进程 | 空 | 要排除的名称,同时从总量中减去 |
+| 面板条目显示 | 最繁忙的应用 | 紧凑面板条目显示的内容 |
+| 快照文件 | `/run/plasma-nethogsd/state.json` | 读取守护进程输出的位置 |
 
-An application that stops transferring keeps its place in the list, dimmed and
-reading zero, until its grace period expires. Ranking by a rate that moves
-every second means bursty applications would otherwise flicker in and out once
-a second. Active applications always claim the available rows first, so a
-lingering one can never displace a transferring one.
+内核必须启用 `CONFIG_DEBUG_INFO_BTF=y`;如果 `/sys/kernel/btf/vmlinux` 缺失,`plasma-nethogsd` 会明确提示。`vmlinux.h` 在构建时从构建机的 BTF 生成,但 CO-RE 重定位针对运行中的内核解析,因此二进制并不绑定构建它的内核。
 
-The kernel must have `CONFIG_DEBUG_INFO_BTF=y`; `plasma-nethogsd` says so explicitly if
-`/sys/kernel/btf/vmlinux` is missing. `vmlinux.h` is generated at build time
-from the build machine's BTF, but CO-RE relocations are resolved against the
-running kernel, so the binary is not tied to the kernel it was built on.
+## 🔍 它测量什么,以及不测量什么
 
-### A trap worth knowing about
+这是一个「谁在用带宽」的工具,不是流量计费工具。
 
-Plasma shows a widget's Configure / Remove menu when a right click reaches the
-containment underneath it. Several QtQuick Controls accept the press instead,
-and then the menu silently never appears: the widget keeps working, and nothing
-is logged. `PlasmaExtras.Representation`, `PlasmaExtras.PlasmoidHeading` and
-`PlasmaComponents.ScrollView` are all in that group — and all three are the
-obvious components to build a full representation from.
+**计入:** 所有用户的进程,TCP 和 UDP(因此也包括 QUIC)、IPv4 和 IPv6,所有经过套接字的流量。
 
-`FullRepresentation.qml` avoids them, using a plain `Item` root, a
-`KSvg.FrameSvgItem` heading and a bare `ListView` with an attached `ScrollBar`.
-`plasmoid/autotests/tst_eventpropagation.qml` probes each component and asserts
-that the resulting structure passes a right click through:
+**不计入或存在偏差:**
 
-```sh
-QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input plasmoid/autotests
-```
+1. **仅限应用层字节。** 钩子挂在套接字层,因此统计的是应用程序交给内核、或从内核取走的字节数。与应用程序自身的字节统计相比是精确的:一次 37 GB 的本地传输误差在 3 字节以内(每秒速率取整为整数所致)。与接口计数器相比则总是偏低,因为不包含 IP/TCP 头部、重传和 TLS 记录开销——所以它永远不会与 `ip -s link` 一致;在流量经过本地代理的机器上,两者甚至不能直接比较。
+2. **从套接字 `splice()` 会绕过 `sock_recvmsg`**,接收方向会被漏掉。发送方向没问题:现代内核会把 `sendfile()` 路由到带 `MSG_SPLICE_PAGES` 的 `sendmsg`,从而到达 `tcp_sendmsg`。
+3. **回环流量按目的地址排除**(`127.0.0.0/8`、`::1`、`::ffff:127.0.0.0/8`)。否则本地开发服务器会永远排在列表最前面。
+4. **TUN 模式代理会使每个字节翻倍。** 使用 clash/mihomo/sing-box 的 TUN 模式时,路径是 `应用 → tun → 代理 → 网卡`,两段都是真实的套接字流量,因此总量约为真实值的 2 倍。在套接字层无法区分二者。请使用部件设置中的 *排除进程*;配置页提供了常见代理名称的一键建议。
+5. **虚拟机**显示为单个 `qemu-system-*` 行。虚拟机内部的进程不可见,这是正确的。
+6. **容器**归属正确——守护进程看到的是宿主机 pid——但显示的名称是容器自身的 `comm`,cgroup 分组会归到 `docker-*` / `libpod-*` 下。
+7. **内核侧流量**(NFS 客户端、kTLS、iSCSI)和**转发流量**(路由/NAT,从不经过本地套接字)没有归属进程,不会显示。
+8. **退出的进程会失去其行。** 它死掉的那个 tick 内字节数仍会被统计;BPF map 在计数器旁存了 `comm`,所以即使 `/proc/<pid>` 已消失,名称也能保留。
 
-Anything new that spans the applet area should be checked against it first.
+## 🪝 为什么钩子不对称
 
-### Iterating on the widget
+接收方向只有一个钩子:`sock_recvmsg()` 是所有套接字读取汇入的唯一入口,因此一次覆盖 TCP、UDP、QUIC、IPv4 和 IPv6,其返回值就是拷贝到用户空间的字节数。
 
-The plasmoid's QML can be installed without root, which is much faster to work
-with. It also carries one compiled type, which is not part of the package, so
-point the QML engine at the build tree for it:
+发送方向无法照搬。自 Linux 6.7 起,系统调用路径调用的是静态的 `__sock_sendmsg()`,编译器会将其内联消除;导出的 `sock_sendmsg()` 只剩内核内部的调用方在使用。对它的探针能成功挂载,但几乎不报告任何数据——这是一个容易踩的坑,因为接收方向一直正常,数字看起来只是偏低而非损坏。传输层处理函数(`tcp_sendmsg`、`udp_sendmsg`、`udpv6_sendmsg`)通过 `sk->sk_prot->sendmsg` 这个间接调用到达,无法被内联,因此是稳定的挂载点。`tcp_sendmsg` 同时服务两个地址族;UDP 每个地址族需要一个钩子,IPv6 那个在挂载时是可选的(针对未编译 IPv6 的内核)。
 
-```sh
-kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
-QML_IMPORT_PATH=build/bin plasmoidviewer -a io.github.swim233.plasma-nethogs
-```
+## 🧩 应用如何分组
 
-QML warnings are routed to the journal unless you ask otherwise:
+可执行文件路径是主键,因为真正把浏览器的多个进程合并起来的是它。systemd 把 Chrome 拆到两个 cgroup 中——浏览器进程落在 `app-com.google.Chrome-<pid>.scope`,而它的子进程进入 `app-google\x2dchrome@<hash>.service`——但它们都共享 `/opt/google/chrome/chrome`。
 
-```sh
-QT_ASSUME_STDERR_HAS_CONSOLE=1 QML_IMPORT_PATH=build/bin \
-  plasmoidviewer -a io.github.swim233.plasma-nethogs
-```
+对于通用解释器(`python*`、`node`、`java`、`electron*`、shell 等),直接合并会混入无关程序,此时改用 systemd cgroup 身份,最后才用 `comm` 兜底。展开一行可以看到被合并进来的各个 pid。
 
-Testing the widget inside plasmashell rather than standalone needs
-`sudo cmake --install build`: plasmashell resolves the compiled type from the
-system QML import path.
+图标取自与 cgroup 桌面 id 匹配的系统级 `.desktop` 文件中的 `Icon=`——根据进程名猜测不够可靠,因为 Chrome 的桌面 id 是 `com.google.Chrome`、二进制名是 `chrome`、图标却是 `google-chrome`。安装在 `~/.local/share` 下的应用会退回到通用图标:unit 设置了 `ProtectHome=yes`,root 守护进程没有理由去读家目录来渲染图标。
 
-## Privileges
+## 🔒 权限
 
-`plasma-nethogsd` runs as a system service with three capabilities and no more:
+`plasma-nethogsd` 作为系统服务运行,只带三个 capability,不多不少:
 
-- `CAP_BPF` and `CAP_PERFMON` — load and attach the programs.
-- `CAP_SYS_PTRACE` — `readlink()` on another user's `/proc/<pid>/exe`.
+- `CAP_BPF` 和 `CAP_PERFMON`——加载并挂载程序。
+- `CAP_SYS_PTRACE`——对其他用户的 `/proc/<pid>/exe` 执行 `readlink()`。
 
-The unit also sets `ProtectSystem=strict`, `ProtectHome=yes`,
-`NoNewPrivileges=yes`, a capability bounding set, and a syscall filter.
+unit 还设置了 `ProtectSystem=strict`、`ProtectHome=yes`、`NoNewPrivileges=yes`、capability 边界集和系统调用过滤器。
 
-`/run/plasma-nethogsd/state.json` is world-readable, because the widget runs as the
-desktop user. On a machine with several login users that discloses which
-applications are using the network. To restrict it, set
-`RuntimeDirectoryMode=0750` in the unit plus a group the desktop user belongs
-to.
+`/run/plasma-nethogsd/state.json` 是全局可读的,因为部件以桌面用户身份运行。在多登录用户的机器上,这会暴露哪些应用在用网络。若要限制,在 unit 中设置 `RuntimeDirectoryMode=0750`,并让桌面用户属于某个组。
 
-## Why the widget reads a file
+## 📄 快照格式
 
-Plasma 6 ships no QML bindings for D-Bus or local sockets, and Qt refuses
-`file://` reads from `XMLHttpRequest` unless `QML_XHR_ALLOW_FILE_READ=1` is set
-— which would have to be set session-wide, lifting the restriction for every
-QML application the user runs.
-
-The daemon writes with `QSaveFile` (temporary file plus rename), so a reader can
-never see a half-written document, and each snapshot carries a monotonic `seq`
-the widget uses to skip repeats.
-
-The widget reads it with a compiled QML type, `StateWatcher`, which watches for
-the daemon's writes and is woken by them. This is the reason the plasmoid is not
-pure QML and cannot be installed on its own.
-
-What pure QML leaves instead is Plasma's `executable` data engine running `cat`
-once per poll, which is what the widget used to do. The expensive part was never
-the `cat`: the engine forks it from inside `plasmashell`, and
-forking a process that large makes the kernel copy its page tables while holding
-`mmap_lock` for write. Measured against a `plasmashell` with 1 GB resident, one
-fork stalled it for 11–17 ms, and because the lock is per-process the stall lands
-on every thread that touches new memory rather than only the one that forked. A
-widget that reports on the system should not be a measurable part of its jitter.
-
-## Snapshot format
-
-`/run/plasma-nethogsd/state.json`, version 1. All rates are **bytes per second**.
+`/run/plasma-nethogsd/state.json`,版本 1。所有速率均为**字节每秒**。
 
 ```json
 {
@@ -306,35 +187,84 @@ widget that reports on the system should not be a measurable part of its jitter.
 }
 ```
 
-An application's `rx`/`tx` is exactly the sum of its `pids`. `total`, however,
-covers every process on the machine, not only the ones listed, so it is
-normally larger than the listed applications add up to. `desktopId`, `icon` and
-`exe` may be `null`.
+应用的 `rx`/`tx` 恰好是其 `pids` 之和。而 `total` 覆盖机器上的所有进程,不只是列出的那些,因此通常大于列出的应用之和。`desktopId`、`icon` 和 `exe` 可能为 `null`。
 
-## Overhead
+守护进程用 `QSaveFile` 写入(临时文件加 rename),读方永远不会看到写了一半的文档;每份快照还带一个单调递增的 `seq`,部件用它跳过重复内容。部件用一个编译型 QML 类型 `StateWatcher` 读取它,由守护进程的写入唤醒——这也是 plasmoid 并非纯 QML、无法单独安装的原因。
 
-Measured on a 7.1 kernel with the daemon sampling once a second:
+## 📈 开销
 
-| | idle | ~3 GB/s of socket traffic |
+在 7.1 内核上、守护进程每秒采样一次测得:
+
+| | 空闲 | 约 3 GB/s 的套接字流量 |
 | --- | --- | --- |
-| CPU | 0.12% of one core | 0.17% of one core |
+| CPU | 单核的 0.12% | 单核的 0.17% |
 | RSS | 19.7 MB | 19.7 MB |
 
-The cost barely moves with traffic, because the per-call work happens in the
-kernel as a map increment and userspace only reads the map once per tick. Most
-of the resident size is QtCore; the cgroup's own peak is around 8 MB.
+开销几乎不随流量变化,因为每次调用的工作在核内只是一次 map 自增,用户空间每个 tick 只读一次 map。常驻内存的大部分是 QtCore;cgroup 自身的峰值约 8 MB。
 
-## Daemon options
+## 🛠️ 开发
 
-| Option | Default | Meaning |
+### 守护进程选项
+
+| 选项 | 默认值 | 含义 |
 | --- | --- | --- |
-| `--interval <ms>` | 1000 | Sampling interval; match the widget's setting |
-| `--out <path>` | `/run/plasma-nethogsd/state.json` | Snapshot location |
-| `--top <n>` | 20 | Applications published per snapshot |
-| `--verbose` | off | Log each snapshot |
+| `--interval <ms>` | 1000 | 采样间隔;与部件的设置保持一致 |
+| `--out <path>` | `/run/plasma-nethogsd/state.json` | 快照输出位置 |
+| `--top <n>` | 20 | 每份快照发布的应用数 |
+| `--verbose` | 关 | 记录每份快照 |
 
-Running it by hand is the quickest way to check the collector on its own:
+手动运行是单独检查采集器最快的方式:
 
 ```sh
 sudo ./build/bin/plasma-nethogsd --verbose --interval 1000 --out /tmp/state.json
 ```
+
+### 迭代部件
+
+plasmoid 的 QML 部分可以单独安装且无需 root,迭代速度快得多。它还带一个编译型类型,该类型不在包内,因此要让 QML 引擎到构建目录里找它:
+
+```sh
+kpackagetool6 --type Plasma/Applet --upgrade plasmoid/package
+QML_IMPORT_PATH=build/bin plasmoidviewer -a io.github.swim233.plasma-nethogs
+```
+
+QML 警告默认进入 journal,除非另行指定:
+
+```sh
+QT_ASSUME_STDERR_HAS_CONSOLE=1 QML_IMPORT_PATH=build/bin \
+  plasmoidviewer -a io.github.swim233.plasma-nethogs
+```
+
+要在 plasmashell 里(而非独立窗口中)测试部件,需要执行 `sudo cmake --install build`:plasmashell 从系统 QML 导入路径解析这个编译型类型。
+
+### 检查
+
+```sh
+# QML 语法
+/usr/lib/qt6/bin/qmllint -I /usr/lib/qt6/qml plasmoid/package/contents/ui/*.qml
+
+# 右键穿透回归测试(见下)
+QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input plasmoid/autotests
+
+# kcfg schema 必须保持良构;损坏的 schema 会静默失败
+xmllint --noout plasmoid/package/contents/config/main.xml
+
+# 编辑 .po 后重新编译翻译目录
+./plasmoid/translations/build.sh
+```
+
+### 一个值得知道的坑
+
+当右键点击穿透到部件下方的 containment 时,Plasma 会显示部件的 配置 / 移除 菜单。但若干 QtQuick Controls 会吞掉按下事件,菜单就永远不出现:部件照常工作,日志里也没有任何记录。`PlasmaExtras.Representation`、`PlasmaExtras.PlasmoidHeading` 和 `PlasmaComponents.ScrollView` 都在此列——而它们恰恰是构建完整 representation 时最容易想到的三个组件。
+
+`FullRepresentation.qml` 避开了它们,改用普通 `Item` 根元素、`KSvg.FrameSvgItem` 标题和带附加 `ScrollBar` 的裸 `ListView`。`plasmoid/autotests/tst_eventpropagation.qml` 逐个探测每个组件,并断言最终结构能让右键点击穿透。任何横跨 applet 区域的新增内容都应先用它验证。
+
+### 为什么部件读文件
+
+Plasma 6 没有提供 D-Bus 或本地套接字的 QML 绑定,而 Qt 拒绝在未设置 `QML_XHR_ALLOW_FILE_READ=1` 时用 `XMLHttpRequest` 读取 `file://`——该变量需要在整个会话范围内设置,等于为用户运行的每个 QML 应用解除限制。
+
+纯 QML 剩下的选项是 Plasma 的 `executable` 数据引擎,每次轮询跑一个 `cat`——部件此前就是这么做的。开销从来不在 `cat`:数据引擎在 `plasmashell` 内部 fork 它,而 fork 一个这么大的进程会让内核在持有 `mmap_lock` 写锁的同时复制它的页表。在常驻 1 GB 的 `plasmashell` 上实测,一次 fork 让它停顿 11–17 ms;由于该锁是进程级的,停顿落在每个触碰新内存的线程上,而不只是发起 fork 的那个。一个监测系统的部件,不该成为系统抖动里可测量的一部分。
+
+## 📄 许可证
+
+[GPL-2.0-or-later](LICENSE)
